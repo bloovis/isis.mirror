@@ -1202,7 +1202,7 @@ int main (int argc, char *argv[])
     initisis (argc, argv);
 
     if (debugger)
-	debug ();
+	single_step ();
 
     /* Start the loaded program.
      */

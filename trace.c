@@ -36,7 +36,7 @@ struct instr instab[256] =
   { "inx b", 1 },
   { "inr b", 1 },
   { "dcr b", 1 },
-  { "mvi b", 1 },
+  { "mvi b,", 2 },
   { "rlc", 1 },
   { "halt", 1 },
   { "dad b", 1 },
@@ -292,13 +292,9 @@ void trace8080 ()
 {
     static int first = 1;
 
-    if (step == 1)
-    {
-	step++;
-	return;
-    }
+    printf ("PC = %04X, step = %d, dotrace = %d\n", savepc, step, dotrace);
 
-    if (step == 2)
+    if (step)
     {
 	step = 0;
 	trace = dotrace;

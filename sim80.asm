@@ -243,6 +243,7 @@ dotrace:
 	mov	[savepc],si
 	mov	esp, [cstack]		; use alternate stack
 	call	trace8080
+resume:
 	mov	eax, [mem8080]		; get base of 8080 memory
 	mov	ecx, eax		; copy it to all 8080 registers
 	mov	edx, eax
@@ -255,7 +256,7 @@ dotrace:
 	mov	bx,[savehl]
 	mov	sp,[savesp]
 	mov	si,[savepc]
-	jmp	[traceret]		; resume decoding
+	jmp	decode			; resume decoding
 
 ; HALT - save registers and call ISIS-II emulator.
 ;
@@ -272,11 +273,11 @@ halt:
 	mov	[savepc],si
 	mov	esp, [cstack]		; use alternate stack
 	call	isis			; when doing ISIS stuff
-					; drop into go8080
+	jmp	resume			; resume decoding
 
-; GO8080 - goto 8080 program
+; GO8080 - start 8080 program
 ;
-; GO8080 can be used by external programs to resume emulation using the
+; GO8080 can be used by external programs to start emulation using the
 ; saved register values.
 
 	global	go8080
@@ -310,37 +311,46 @@ go8080:
 ; The fetch operation destroys the flags (they're still in ah though),
 ; so any instruction that needs the flags back must do a "getf" macro call.
 
-%macro	decode	0
-	cmp	[trace], byte 0	; is trace flag set?
-	jnz	%%trace
-%%fetch:
-	mov	edi,[esi] 	; get the opcode
-	inc	esi		; bump the program counter
-	and	edi,0ffh 	; mask off high bits of opcode
-	shl	edi,2		; make it an address pointer
-	jmp	[edi+jmptab]	; jump to appropriate instruction handler
-%%trace:
-	mov	edi, %%fetch
-	jmp	dotrace
-%endmacro
+;%macro	decode	0
+;	cmp	[trace], byte 0	; is trace flag set?
+;	jnz	%%trace
+;%%fetch:
+;	mov	edi,[esi] 	; get the opcode
+;	inc	esi		; bump the program counter
+;	and	edi,0ffh 	; mask off high bits of opcode
+;	shl	edi,2		; make it an address pointer
+;	jmp	[edi+jmptab]	; jump to appropriate instruction handler
+;%%trace:
+;	mov	edi, %%fetch
+;	jmp	dotrace
+;%endmacro
 
 bump2f:
 	lahf			; save flags
 	add	esi,2		; skip two-byte operand
-	decode
+	jmp	short fetch
 bump1f:
 	lahf			; save flags
 	inc	esi		; skip past one-byte operand
-	decode
+	jmp	short fetch
 fetchf:
 	lahf			; save flags
-	decode
+	jmp	short fetch
 bump2:
 	inc	si		; bump program counter by 2
 bump1:
 	inc	si		; bump program counter by 1
 fetch:
-	decode
+	cmp	[trace], byte 0	; is trace flag set?
+	jnz	dotrace1
+decode:
+	mov	edi,[esi] 	; get the opcode
+	inc	esi		; bump the program counter
+	and	edi,0ffh 	; mask off high bits of opcode
+	shl	edi,2		; make it an address pointer
+	jmp	[edi+jmptab]	; jump to appropriate instruction handler
+dotrace1:
+	jmp	dotrace
 
 ; 1-f
 
@@ -744,6 +754,7 @@ sbbd:	getf
 sbbe:	getf
 	sbb	al,dl
 	jmp	fetchf
+	public
 sbbh:	getf
 	sbb	al,bh
 	jmp	fetchf
@@ -875,10 +886,10 @@ calldi1:			; come here for RSTx, di contains new PC
 	push1	si
 	mov	si,di
 fetch1:
-	decode
+	jmp	fetch
 bump2a:
 	add	si,2		; skip past two-byte operand
-	decode
+	jmp	fetch
 
 ; d0 - df
 
@@ -972,10 +983,10 @@ calldi2:			; come here for RSTx, di contains new PC
 	push1	si
 	mov	si,di
 fetch2:
-	decode
+	jmp	fetch
 bump2b:
 	add	si,2		; skip past two byte operand
-	decode
+	jmp	fetch
 
 ; f0 - ff
 
