@@ -1142,7 +1142,7 @@ void initisis (int argc, char *argv[])
     // Removing the high 16 bits of the address works because the
     // buffer is in 8080 memory space.  But it causes a gcc warning.
 
-    pblk.l_file = (WORD) &f->f_lbuf[f->f_index];
+    pblk.l_file = (WORD) (int) &f->f_lbuf[f->f_index];
 
     // skip read pointer past filename to command to tail
     while (f->f_lbuf[f->f_index] != ' ' && f->f_lbuf[f->f_index] != '\r')
