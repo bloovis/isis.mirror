@@ -1,0 +1,3 @@
+	mov	h,l
+	end
+
