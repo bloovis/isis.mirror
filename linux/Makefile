@@ -1,4 +1,4 @@
-# Makefile for building visis on Linux using gcc and nasm
+# Makefile for building isis on Linux using gcc and nasm
 
 DEBUG = -g
 
