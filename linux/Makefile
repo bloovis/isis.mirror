@@ -5,8 +5,11 @@ DEBUG = -g
 %.o : ../%.c
 	gcc -c -Wall $(DEBUG) $<
 
-%.o : ../%.asm
-	nasm -f elf -o $@ $<
+#%.o : ../%.asm
+#	nasm -f elf -o $@ $<
+
+%.o : ../%.S
+	gcc -c $<
 
 OBJ = isis.o sim80.o trace.o debug.o 
 
