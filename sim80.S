@@ -2,6 +2,34 @@
 #	page	66,128
 #	name	sim80
 
+# Preprocessor defines for 32-bit/64-bit portability.
+
+#if __i386__
+
+#define RAX %eax
+#define RBX %ebx
+#define RCX %ecx
+#define RDX %edx
+#define RSP %esp
+#define RSI %esi
+#define RDI %edi
+
+#define wptr .long
+
+#else
+
+#define RAX %rax
+#define RBX %rbx
+#define RCX %rcx
+#define RDX %rdx
+#define RSP %rsp
+#define RSI %rsi
+#define RDI %rdi
+
+#define wptr .quad
+
+#endif
+
 	.data
 
 	.globl	mem8080		# pointer to base of 8080 memory block, always
@@ -38,146 +66,146 @@ savepc:		.short	0		# contents of program counter
 
 # Saved value of C stack pointer
 
-cstack:	.long	0
+cstack:	wptr	0
 
 # Trace flag - set to non-zero to enable tracing
 
 	.globl	trace
-trace:	.long	0
+trace:	.int	0
 
 traceret:
-	.value	0
+	wptr	0
 
 # JMPTAB - table of instruction handlers, indexed by opcode 0-255
 
-jmptab:	.long	fetch,lxib		# 0,1
-	.long	staxb,inxb		# 2,3
-	.long	inrb,dcrb		# 4,5
-	.long	mvib,rlc		# 6,7
-	.long	halt,dadb		# 8,9
-	.long	ldaxb,dcxb		# a,b
-	.long	inrc,dcrc		# c,d
-	.long	mvic,rrc		# e,f
-	.long	halt,lxid		# 10,11
-	.long	staxd,inxd		# 12,13
-	.long	inrd,dcrd		# 14,15
-	.long	mvid,ral		# 16,17
-	.long	halt,dadd		# 18,19
-	.long	ldaxd,dcxd		# 1a,1b
-	.long	inre,dcre		# 1c,1d
-	.long	mvie,rar		# 1e,1f
-	.long	halt,lxih		# 20,21
-	.long	shldx,inxh		# 22,23
-	.long	inrh,dcrh		# 24,25
-	.long	mvih,daa1		# 26,27
-	.long	halt,dadh		# 28,29
-	.long	lhld,dcxh		# 2a,2b
-	.long	inrl,dcrl		# 2c,2d
-	.long	mvil,cma		# 2e,2f
-	.long	halt,lxisp 	# 30,31
-	.long	sta,inxsp 	# 32,33
-	.long	inrm,dcrm		# 34,35
-	.long	mvim,stc1		# 36,37
-	.long	halt,dadsp 	# 38,39
-	.long	lda,dcxsp 	# 3a,3b
-	.long	inra,dcra		# 3c,3d
-	.long	mvia,cmc1		# 3e,3f
-	.long	movbb,movbc 	# 40,41
-	.long	movbd,movbe 	# 42,43
-	.long	movbh,movbl 	# 44,45
-	.long	movbm,movba 	# 46,47
-	.long	movcb,movcc 	# 48,49
-	.long	movcd,movce 	# 4a,4b
-	.long	movch,movcl 	# 4c,4d
-	.long	movcm,movca 	# 4e,4f
-	.long	movdb,movdc 	# 50,51
-	.long	movdd,movde 	# 52,53
-	.long	movdh,movdl 	# 54,55
-	.long	movdm,movda 	# 56,57
-	.long	moveb,movec 	# 58,59
-	.long	moved,movee 	# 5a,5b
-	.long	moveh,movel 	# 5c,5d
-	.long	movem,movea 	# 5e,5f
-	.long	movhb,movhc 	# 60,61
-	.long	movhd,movhe 	# 62,63
-	.long	movhh,movhl 	# 64,65
-	.long	movhm,movha 	# 66,67
-	.long	movlb,movlc 	# 68,69
-	.long	movld,movle 	# 6a,6b
-	.long	movlh,movll 	# 6c,6d
-	.long	movlm,movla 	# 6e,6f
-	.long	movmb,movmc 	# 70,71
-	.long	movmd,movme 	# 72,73
-	.long	movmh,movml 	# 74,75
-	.long	halt,movma 	# 76,77
-	.long	movab,movac 	# 78,79
-	.long	movad,movae 	# 7a,7b
-	.long	movah,moval 	# 7c,7d
-	.long	movam,movaa 	# 7e,7f
-	.long	addb,addc		# 80,81
-	.long	addd,adde		# 82,83
-	.long	addh,addl		# 84,85
-	.long	addm,adda		# 86,87
-	.long	adcb,adcc		# 88,89
-	.long	adcd,adce		# 8a,8b
-	.long	adch,adcl		# 8c,8d
-	.long	adcm,adca		# 8e,8f
-	.long	subb,subc		# 90,91
-	.long	subd,sube		# 92,93
-	.long	subh,subl		# 94,95
-	.long	subm,suba		# 96,97
-	.long	sbbb,sbbc		# 98,99
-	.long	sbbd,sbbe		# 9a,9b
-	.long	sbbh,sbbl		# 9c,9d
-	.long	sbbm,sbba		# 9e,9f
-	.long	anab,anac		# a0,a1
-	.long	anad,anae		# a2,a3
-	.long	anah,anal		# a4,a5
-	.long	anam,anaa		# a6,a7
-	.long	xrab,xrac		# a8,a9
-	.long	xrad,xrae		# aa,ab
-	.long	xrah,xral		# ac,ad
-	.long	xram,xraa		# ae,af
-	.long	orab,orac		# b0,b1
-	.long	orad,orae		# b2,b3
-	.long	orah,oral		# b4,b5
-	.long	oram,oraa		# b6,b7
-	.long	cmpb,cmpc		# b8,b9
-	.long	cmpd,cmpe		# ba,bb
-	.long	cmph,cmpl		# bc,bd
-	.long	cmpm,cmpa		# be,bf
-	.long	rnz,popb		# c0,c1
-	.long	jnz1,jmp1		# c2,c3
-	.long	cnz,pushb		# c4,c5
-	.long	adi,rst0		# c6,c7
-	.long	rz,ret1		# c8,c9
-	.long	jz1,halt		# ca,cb
-	.long	cz,call1		# cc,cd
-	.long	aci,rst1		# ce,cf
-	.long	rnc,popd		# d0,d1
-	.long	jnc1,halt		# d2,d3
-	.long	cnc,pushd		# d4,d5
-	.long	sui,rst2		# d6,d7
-	.long	rc,halt		# d8,d9
-	.long	jc1,halt		# da,db
-	.long	cc,halt		# dc,dd
-	.long	sbi,rst3		# de,df
-	.long	rpo,poph		# e0,e1
-	.long	jpo1,xthl		# e2,e3
-	.long	cpo,pushh		# e4,e5
-	.long	ani,rst4		# e6,e7
-	.long	rpe,pchl		# e8,e9
-	.long	jpe1,xchgx		# ea,eb
-	.long	cpe,halt		# ec,ed
-	.long	xri,rst5		# ee,ef
-	.long	rp,poppsw    		# f0,f1
-	.long	jpx,fetch		# f2,f3
-	.long	cp,pushpsw    	# f4,f5
-	.long	ori,rst6		# f6,f7
-	.long	rm,sphl		# f8,f9
-	.long	jm,fetch		# fa,fb
-	.long	cm,halt		# fc,fd
-	.long	cpi,rst7		# fe,ff
+jmptab:	wptr	fetch,lxib		# 0,1
+	wptr	staxb,inxb		# 2,3
+	wptr	inrb,dcrb		# 4,5
+	wptr	mvib,rlc		# 6,7
+	wptr	halt,dadb		# 8,9
+	wptr	ldaxb,dcxb		# a,b
+	wptr	inrc,dcrc		# c,d
+	wptr	mvic,rrc		# e,f
+	wptr	halt,lxid		# 10,11
+	wptr	staxd,inxd		# 12,13
+	wptr	inrd,dcrd		# 14,15
+	wptr	mvid,ral		# 16,17
+	wptr	halt,dadd		# 18,19
+	wptr	ldaxd,dcxd		# 1a,1b
+	wptr	inre,dcre		# 1c,1d
+	wptr	mvie,rar		# 1e,1f
+	wptr	halt,lxih		# 20,21
+	wptr	shldx,inxh		# 22,23
+	wptr	inrh,dcrh		# 24,25
+	wptr	mvih,daa1		# 26,27
+	wptr	halt,dadh		# 28,29
+	wptr	lhld,dcxh		# 2a,2b
+	wptr	inrl,dcrl		# 2c,2d
+	wptr	mvil,cma		# 2e,2f
+	wptr	halt,lxisp 	# 30,31
+	wptr	sta,inxsp 	# 32,33
+	wptr	inrm,dcrm		# 34,35
+	wptr	mvim,stc1		# 36,37
+	wptr	halt,dadsp 	# 38,39
+	wptr	lda,dcxsp 	# 3a,3b
+	wptr	inra,dcra		# 3c,3d
+	wptr	mvia,cmc1		# 3e,3f
+	wptr	movbb,movbc 	# 40,41
+	wptr	movbd,movbe 	# 42,43
+	wptr	movbh,movbl 	# 44,45
+	wptr	movbm,movba 	# 46,47
+	wptr	movcb,movcc 	# 48,49
+	wptr	movcd,movce 	# 4a,4b
+	wptr	movch,movcl 	# 4c,4d
+	wptr	movcm,movca 	# 4e,4f
+	wptr	movdb,movdc 	# 50,51
+	wptr	movdd,movde 	# 52,53
+	wptr	movdh,movdl 	# 54,55
+	wptr	movdm,movda 	# 56,57
+	wptr	moveb,movec 	# 58,59
+	wptr	moved,movee 	# 5a,5b
+	wptr	moveh,movel 	# 5c,5d
+	wptr	movem,movea 	# 5e,5f
+	wptr	movhb,movhc 	# 60,61
+	wptr	movhd,movhe 	# 62,63
+	wptr	movhh,movhl 	# 64,65
+	wptr	movhm,movha 	# 66,67
+	wptr	movlb,movlc 	# 68,69
+	wptr	movld,movle 	# 6a,6b
+	wptr	movlh,movll 	# 6c,6d
+	wptr	movlm,movla 	# 6e,6f
+	wptr	movmb,movmc 	# 70,71
+	wptr	movmd,movme 	# 72,73
+	wptr	movmh,movml 	# 74,75
+	wptr	halt,movma 	# 76,77
+	wptr	movab,movac 	# 78,79
+	wptr	movad,movae 	# 7a,7b
+	wptr	movah,moval 	# 7c,7d
+	wptr	movam,movaa 	# 7e,7f
+	wptr	addb,addc		# 80,81
+	wptr	addd,adde		# 82,83
+	wptr	addh,addl		# 84,85
+	wptr	addm,adda		# 86,87
+	wptr	adcb,adcc		# 88,89
+	wptr	adcd,adce		# 8a,8b
+	wptr	adch,adcl		# 8c,8d
+	wptr	adcm,adca		# 8e,8f
+	wptr	subb,subc		# 90,91
+	wptr	subd,sube		# 92,93
+	wptr	subh,subl		# 94,95
+	wptr	subm,suba		# 96,97
+	wptr	sbbb,sbbc		# 98,99
+	wptr	sbbd,sbbe		# 9a,9b
+	wptr	sbbh,sbbl		# 9c,9d
+	wptr	sbbm,sbba		# 9e,9f
+	wptr	anab,anac		# a0,a1
+	wptr	anad,anae		# a2,a3
+	wptr	anah,anal		# a4,a5
+	wptr	anam,anaa		# a6,a7
+	wptr	xrab,xrac		# a8,a9
+	wptr	xrad,xrae		# aa,ab
+	wptr	xrah,xral		# ac,ad
+	wptr	xram,xraa		# ae,af
+	wptr	orab,orac		# b0,b1
+	wptr	orad,orae		# b2,b3
+	wptr	orah,oral		# b4,b5
+	wptr	oram,oraa		# b6,b7
+	wptr	cmpb,cmpc		# b8,b9
+	wptr	cmpd,cmpe		# ba,bb
+	wptr	cmph,cmpl		# bc,bd
+	wptr	cmpm,cmpa		# be,bf
+	wptr	rnz,popb		# c0,c1
+	wptr	jnz1,jmp1		# c2,c3
+	wptr	cnz,pushb		# c4,c5
+	wptr	adi,rst0		# c6,c7
+	wptr	rz,ret1		# c8,c9
+	wptr	jz1,halt		# ca,cb
+	wptr	cz,call1		# cc,cd
+	wptr	aci,rst1		# ce,cf
+	wptr	rnc,popd		# d0,d1
+	wptr	jnc1,halt		# d2,d3
+	wptr	cnc,pushd		# d4,d5
+	wptr	sui,rst2		# d6,d7
+	wptr	rc,halt		# d8,d9
+	wptr	jc1,halt		# da,db
+	wptr	cc,halt		# dc,dd
+	wptr	sbi,rst3		# de,df
+	wptr	rpo,poph		# e0,e1
+	wptr	jpo1,xthl		# e2,e3
+	wptr	cpo,pushh		# e4,e5
+	wptr	ani,rst4		# e6,e7
+	wptr	rpe,pchl		# e8,e9
+	wptr	jpe1,xchgx		# ea,eb
+	wptr	cpe,halt		# ec,ed
+	wptr	xri,rst5		# ee,ef
+	wptr	rp,poppsw    		# f0,f1
+	wptr	jpx,fetch		# f2,f3
+	wptr	cp,pushpsw    	# f4,f5
+	wptr	ori,rst6		# f6,f7
+	wptr	rm,sphl		# f8,f9
+	wptr	jm,fetch		# fa,fb
+	wptr	cm,halt		# fc,fd
+	wptr	cpi,rst7		# fe,ff
 
 	.text
 
@@ -234,22 +262,22 @@ diok:
 # dotrace - save registers and call instruction trace printer
 
 dotrace:
-	mov	%edi,traceret		# save place to resume decoding
+	mov	RDI,traceret		# save place to resume decoding
 	movw	%ax,savepsw
 	movw	%cx,savebc
 	movw	%dx,savede
 	movw	%bx,savehl
 	movw	%sp,savesp
 	movw	%si,savepc
-	mov	cstack,%esp		# use alternate stack
+	mov	cstack,RSP		# use alternate stack
 	call	trace8080
 resume:
-	mov	mem8080,%eax		# get base of 8080 memory
-	mov	%eax,%ecx		# copy it to all 8080 registers
-	mov	%eax,%edx
-	mov	%eax,%ebx
-	mov	%eax,%esp
-	mov	%eax,%esi
+	mov	mem8080,RAX		# get base of 8080 memory
+	mov	RAX,RCX			# copy it to all 8080 registers
+	mov	RAX,RDX
+	mov	RAX,RBX
+	mov	RAX,RSP
+	mov	RAX,RSI
 	movw	savepsw,%ax		# set 8080 registers (low words)
 	movw	savebc,%cx
 	movw	savede,%dx
@@ -271,7 +299,7 @@ halt:
 	movw	%bx,savehl
 	movw	%sp,savesp
 	movw	%si,savepc
-	mov	cstack,%esp		# use alternate stack
+	mov	cstack,RSP		# use alternate stack
 	call	isis			# when doing ISIS stuff
 	jmp	resume			# resume decoding
 
@@ -283,13 +311,13 @@ halt:
 	.globl	go8080
 
 go8080:
-	mov	%esp,cstack		# save C stack pointer
-	mov	mem8080,%eax		# get base of 8080 memory
-	mov	%eax,%ecx		# copy it to all 8080 registers
-	mov	%eax,%edx
-	mov	%eax,%ebx
-	mov	%eax,%esp
-	mov	%eax,%esi
+	mov	RSP,cstack		# save C stack pointer
+	mov	mem8080,RAX		# get base of 8080 memory
+	mov	RAX,RCX			# copy it to all 8080 registers
+	mov	RAX,RDX
+	mov	RAX,RBX
+	mov	RAX,RSP
+	mov	RAX,RSI
 	movw	savepsw,%ax		# set 8080 registers (low words)
 	movw	savebc,%cx
 	movw	savede,%dx
@@ -327,11 +355,11 @@ go8080:
 
 bump2f:
 	lahf			# save flags
-	add	$2,%esi		# skip two-byte operand
+	add	$2,RSI		# skip two-byte operand
 	jmp	fetch
 bump1f:
 	lahf			# save flags
-	inc	%esi		# skip past one-byte operand
+	inc	RSI		# skip past one-byte operand
 	jmp	fetch
 fetchf:
 	lahf			# save flags
@@ -344,22 +372,26 @@ fetch:
 	cmpl	$0, trace	# is trace flag set?
 	jnz	dotrace1
 decode:
-	mov	(%esi),%edi 	# get the opcode
-	inc	%esi		# bump the program counter
-	and	$0x0ff,%edi 	# mask off high bits of opcode
-	shl	$2,%edi		# make it an address pointer
-	jmp	*jmptab(%edi)	# jump to appropriate instruction handler
+	mov	(RSI),%edi 	# get the opcode
+	inc	RSI		# bump the program counter
+	and	$0x0ff,RDI 	# mask off high bits of opcode
+#if __i386__
+	shl	$2,RDI		# make it an address pointer
+#else
+	shl	$3,RDI		# make it an address pointer
+#endif
+	jmp	*jmptab(RDI)	# jump to appropriate instruction handler
 dotrace1:
 	jmp	dotrace
 
 # 1-f
 
-lxib:	movw	(%esi),%cx
+lxib:	movw	(RSI),%cx
 	jmp	bump2
-staxb:	mov	%esi,%edi
+staxb:	mov	RSI,RDI
 	movw	%cx,%di
 	chkdi
-	movb	%al,(%edi)
+	movb	%al,(RDI)
 	jmp	fetch
 inxb:	incw	%cx
 	jmp	fetch
@@ -369,7 +401,7 @@ inrb:	getf
 dcrb:	getf
 	decb	%ch
 	jmp	fetchf
-mvib:	movb	(%esi),%ch
+mvib:	movb	(RSI),%ch
 	jmp	bump1
 	getf
 rlc:	getf
@@ -381,9 +413,9 @@ clc1:	andb	$0x0fe,%ah
 	jmp	fetch
 stc1:	orb	$1,%ah
 	jmp	fetch
-ldaxb:	mov	%esi,%edi
+ldaxb:	mov	RSI,RDI
 	movw	%cx,%di
-	movb	(%edi),%al
+	movb	(RDI),%al
 	jmp	fetch
 dcxb:	decw	%cx
 	jmp	fetch
@@ -393,7 +425,7 @@ inrc:	getf
 dcrc:	getf
 	decb	%cl
 	jmp	fetchf
-mvic:	movb	(%esi),%cl
+mvic:	movb	(RSI),%cl
 	jmp	bump1
 rrc:	getf
 	rorb	$1,%al
@@ -401,12 +433,12 @@ rrc:	getf
 
 # 10-1f
 
-lxid:	movw	(%esi),%dx
+lxid:	movw	(RSI),%dx
 	jmp	bump2
-staxd:	mov	%esi,%edi
+staxd:	mov	RSI,RDI
 	movw	%dx,%di
 	chkdi
-	movb	%al,(%edi)
+	movb	%al,(RDI)
 	jmp	fetch
 inxd:	incw	%dx
 	jmp	fetch
@@ -416,16 +448,16 @@ inrd:	getf
 dcrd:	getf
 	decb	%dh
 	jmp	fetchf
-mvid:	movb	(%esi),%dh
+mvid:	movb	(RSI),%dh
 	jmp	bump1
 ral:	getf
 	rclb	$1,%al
 	jmp	fetchf
 dadd:	addw	%dx,%bx
 	jmp	testc
-ldaxd:	mov	%esi,%edi
+ldaxd:	mov	RSI,RDI
 	movw	%dx,%di
-	movb	(%edi),%al
+	movb	(RDI),%al
 	jmp	fetch
 dcxd:	decw	%dx
 	jmp	fetch
@@ -435,7 +467,7 @@ inre:	getf
 dcre:	getf
 	decb	%dl
 	jmp	fetchf
-mvie:	movb	(%esi),%dl
+mvie:	movb	(RSI),%dl
 	jmp	bump1
 rar:	getf
 	rcrb	$1,%al
@@ -443,12 +475,12 @@ rar:	getf
 
 # 20-2f
 
-lxih:	movw	(%esi),%bx
+lxih:	movw	(RSI),%bx
 	jmp	bump2
-shldx:	mov	%esi,%edi
-	movw	(%esi),%di
+shldx:	mov	RSI,RDI
+	movw	(RSI),%di
 	chkdi
-	movw	%bx,(%edi)
+	movw	%bx,(RDI)
 	jmp	bump2
 inxh:	incw	%bx
 	jmp	fetch
@@ -458,17 +490,21 @@ inrh:	getf
 dcrh:	getf
 	decb	%bh
 	jmp	fetchf
-mvih:	movb	(%esi),%bh
+mvih:	movb	(RSI),%bh
 	jmp	bump1
 daa1:	getf
+#if __i386__
 	daa
+#else
+	jmp	halt
+#endif
 	jmp	fetchf
 dadh:	addw	%bx,%bx
 	jmp	testc
-lhld:	mov	%esi,%edi
-	movw	(%esi),%di
+lhld:	mov	RSI,RDI
+	movw	(RSI),%di
 	chkdi
-	movw	(%edi),%bx
+	movw	(RDI),%bx
 	jmp	bump2
 dcxh:	decw	%bx
 	jmp	fetch
@@ -478,42 +514,42 @@ inrl:	getf
 dcrl:	getf
 	decb	%bl
 	jmp	fetchf
-mvil:	movb	(%esi),%bl
+mvil:	movb	(RSI),%bl
 	jmp	bump1
 cma:	notb	%al
 	jmp	fetch
 
 # 30-3F
 
-lxisp:	movw	(%esi),%sp
+lxisp:	movw	(RSI),%sp
 	jmp	bump2
-sta:	mov	%esi,%edi
-	movw	(%esi),%di
+sta:	mov	RSI,RDI
+	movw	(RSI),%di
 	chkdi
-	movb	%al,(%edi)
+	movb	%al,(RDI)
 	jmp	bump2
 inxsp:	incw	%sp
 	jmp	fetch
 inrm:	chkbx
 	getf
-	incb	(%ebx)
+	incb	(RBX)
 	jmp	fetchf
 dcrm:	chkbx
 	getf
-	decb	(%ebx)
+	decb	(RBX)
 	jmp	fetchf
-mvim:	mov	%esi,%edi
+mvim:	mov	RSI,RDI
 	movw	%bx,%di
 	chkdi
-	movb	(%esi),%bl
-	movb	%bl,(%edi)
+	movb	(RSI),%bl
+	movb	%bl,(RDI)
 	movw	%di,%bx
 	jmp	bump1
 dadsp:	addw	%sp,%bx
 	jmp	testc
-lda:	mov	%esi,%edi
-	movw	(%esi),%di
-	movb	(%edi),%al
+lda:	mov	RSI,RDI
+	movw	(RSI),%di
+	movb	(RDI),%al
 	jmp	bump2
 dcxsp:	decw	%sp
 	jmp	fetch
@@ -523,7 +559,7 @@ inra:	getf
 dcra:	getf
 	decb	%al
 	jmp	fetchf
-mvia:	movb	(%esi),%al
+mvia:	movb	(RSI),%al
 	jmp	bump1
 cmc1:	xorb	$1,%ah
 	jmp	fetch
@@ -542,7 +578,7 @@ movbh:	movb	%bh,%ch
 	jmp	fetch
 movbl:	movb	%bl,%ch
 	jmp	fetch
-movbm:	movb	(%ebx),%ch
+movbm:	movb	(RBX),%ch
 	jmp	fetch
 movba:	movb	%al,%ch
 	jmp	fetch
@@ -558,7 +594,7 @@ movch:	movb	%bh,%cl
 	jmp	fetch
 movcl:	movb	%bl,%cl
 	jmp	fetch
-movcm:	movb	(%ebx),%cl
+movcm:	movb	(RBX),%cl
 	jmp	fetch
 movca:	movb	%al,%cl
 	jmp	fetch
@@ -577,7 +613,7 @@ movdh:	movb	%bh,%dh
 	jmp	fetch
 movdl:	movb	%bl,%dh
 	jmp	fetch
-movdm:	movb	(%ebx),%dh
+movdm:	movb	(RBX),%dh
 	jmp	fetch
 movda:	movb	%al,%dh
 	jmp	fetch
@@ -593,7 +629,7 @@ moveh:	movb	%bh,%dl
 	jmp	fetch
 movel:	movb	%bl,%dl
 	jmp	fetch
-movem:	movb	(%ebx),%dl
+movem:	movb	(RBX),%dl
 	jmp	fetch
 movea:	movb	%al,%dl
 	jmp	fetch
@@ -612,7 +648,7 @@ movhh:	movb	%bh,%bh
 	jmp	fetch
 movhl:	movb	%bl,%bh
 	jmp	fetch
-movhm:	movb	(%ebx),%bh
+movhm:	movb	(RBX),%bh
 	jmp	fetch
 movha:	movb	%al,%bh
 	jmp	fetch
@@ -628,7 +664,7 @@ movlh:	movb	%bh,%bl
 	jmp	fetch
 movll:	movb	%bl,%bl
 	jmp	fetch
-movlm:	movb	(%ebx),%bl
+movlm:	movb	(RBX),%bl
 	jmp	fetch
 movla:	movb	%al,%bl
 	jmp	fetch
@@ -636,25 +672,25 @@ movla:	movb	%al,%bl
 # 70-7F
 
 movmb:	chkbx
-	movb	%ch,(%ebx)
+	movb	%ch,(RBX)
 	jmp	fetch
 movmc:	chkbx
-	movb	%cl,(%ebx)
+	movb	%cl,(RBX)
 	jmp	fetch
 movmd:	chkbx
-	movb	%dh,(%ebx)
+	movb	%dh,(RBX)
 	jmp	fetch
 movme:	chkbx
-	movb	%dl,(%ebx)
+	movb	%dl,(RBX)
 	jmp	fetch
 movmh:	chkbx
-	movb	%bh,(%ebx)
+	movb	%bh,(RBX)
 	jmp	fetch
 movml:	chkbx
-	movb	%bl,(%ebx)
+	movb	%bl,(RBX)
 	jmp	fetch
 movma:	chkbx
-	movb	%al,(%ebx)
+	movb	%al,(RBX)
 	jmp	fetch
 movab:	movb	%ch,%al
 	jmp	fetch
@@ -668,7 +704,7 @@ movah:	movb	%bh,%al
 	jmp	fetch
 moval:	movb	%bl,%al
 	jmp	fetch
-movam:	movb	(%ebx),%al
+movam:	movb	(RBX),%al
 	jmp	fetch
 movaa:	movb	%al,%al
 	jmp	fetch
@@ -687,7 +723,7 @@ addh:	addb	%bh,%al
 	jmp	fetchf
 addl:	addb	%bl,%al
 	jmp	fetchf
-addm:	addb	(%ebx),%al
+addm:	addb	(RBX),%al
 	jmp	fetchf
 adda:	addb	%al,%al
 	jmp	fetchf
@@ -710,7 +746,7 @@ adcl:	getf
 	adcb	%bl,%al
 	jmp	fetchf
 adcm:	getf
-	adcb	(%ebx),%al
+	adcb	(RBX),%al
 	jmp	fetchf
 adca:	getf
 	adcb	%al,%al
@@ -737,7 +773,7 @@ subl:
 	subb	%bl,%al
 	jmp	fetchf
 subm:
-	subb	(%ebx),%al
+	subb	(RBX),%al
 	jmp	fetchf
 suba:
 	subb	%al,%al
@@ -761,7 +797,7 @@ sbbl:	getf
 	sbbb	%bl,%al
 	jmp	fetchf
 sbbm:	getf
-	sbbb	(%ebx),%al
+	sbbb	(RBX),%al
 	jmp	fetchf
 sbba:	getf
 	sbbb	%al,%al
@@ -781,7 +817,7 @@ anah:	andb	%bh,%al
 	jmp	fetchf
 anal:	andb	%bl,%al
 	jmp	fetchf
-anam:	andb	(%ebx),%al
+anam:	andb	(RBX),%al
 	jmp	fetchf
 anaa:	andb	%al,%al
 	jmp	fetchf
@@ -797,7 +833,7 @@ xrah:	xorb	%bh,%al
 	jmp	fetchf
 xral:	xorb	%bl,%al
 	jmp	fetchf
-xram:	xorb	(%ebx),%al
+xram:	xorb	(RBX),%al
 	jmp	fetchf
 xraa:	xorb	%al,%al
 	jmp	fetchf
@@ -816,7 +852,7 @@ orah:	orb	%bh,%al
 	jmp	fetchf
 oral:	orb	%bl,%al
 	jmp	fetchf
-oram:	orb	(%ebx),%al
+oram:	orb	(RBX),%al
 	jmp	fetchf
 oraa:	orb	%al,%al
 	jmp	fetchf
@@ -832,7 +868,7 @@ cmph:	cmpb	%bh,%al
 	jmp	fetchf
 cmpl:	cmpb	%bl,%al
 	jmp	fetchf
-cmpm:	cmpb	(%ebx),%al
+cmpm:	cmpb	(RBX),%al
 	jmp	fetchf
 cmpa:	cmpb	%al,%al
 	jmp	fetchf
@@ -847,14 +883,14 @@ popb:	pop1	%cx
 	jmp	fetch1
 jnz1:	getf
 	jz	bump2a
-jmp1:	movw	(%esi),%si
+jmp1:	movw	(RSI),%si
 	jmp	fetch1
 cnz:	getf
 	jnz	call1
 	jmp	bump2a
 pushb:	push1	%cx
 	jmp	fetch1
-adi:	addb	(%esi),%al
+adi:	addb	(RSI),%al
 	jmp	bump1f
 rst0:	xorw	%di,%di
 	jmp	calldi1
@@ -864,13 +900,13 @@ ret1:	pop1	%si
 	jmp	fetch1
 jz1:	getf
 	jnz	bump2a
-	movw	(%esi),%si
+	movw	(RSI),%si
 	jmp	fetch1
 cz:	getf
 	jz	call1
 	jmp	bump2a
 aci:	getf
-	adcb	(%esi),%al
+	adcb	(RSI),%al
 	jmp	bump1f
 rst1:	movw	$8,%di
 	jmp	calldi1
@@ -878,7 +914,7 @@ rst1:	movw	$8,%di
 # routines used by c0-df
 
 call1:
-	movw	(%esi),%di
+	movw	(RSI),%di
 	incw	%si
 	incw	%si
 calldi1:			# come here for RSTx, di contains new PC
@@ -901,14 +937,14 @@ popd:	pop1	%dx
 	jmp	fetch1
 jnc1:	getf
 	jc	bump2a
-	movw	(%esi),%si
+	movw	(RSI),%si
 	jmp	fetch1
 cnc:	getf
 	jnc	call4
 	jmp	bump2a
 pushd:	push1	%dx
 	jmp	fetch1
-sui:	subb	(%esi),%al
+sui:	subb	(RSI),%al
 	jmp	bump1f
 rst2:	movw	2*8,%di
 	jmp	calldi1
@@ -918,13 +954,13 @@ rc:	getf
 fetch4:	jmp	fetch1
 jc1:	getf
 	jnc	bump2a
-	movw	(%esi),%si
+	movw	(RSI),%si
 	jmp	fetch1
 cc:	getf
 	jc	call2
 	jmp	bump2a
 sbi:	getf
-	sbbb	(%esi),%al
+	sbbb	(RSI),%al
 	jmp	bump1f
 rst3:	movw	3*8,%di
 	jmp	calldi2
@@ -939,16 +975,16 @@ poph:	pop1	%bx
 	jmp	fetch2
 jpo1:	getf
 	jpe	bump2c
-	movw	(%esi),%si
+	movw	(RSI),%si
 	jmp	fetch2
-xthl:	xchgw	(%esp),%bx
+xthl:	xchgw	(RSP),%bx
 	jmp	fetch2
 cpo:	getf
 	jpo	call2
 bump2c:	jmp	bump2b
 pushh:	push1	%bx
 	jmp	fetch2
-ani:	andb	(%esi),%al
+ani:	andb	(RSI),%al
 	jmp	bump1f
 rst4:	movw	4*8,%di
 	jmp	calldi2
@@ -960,14 +996,14 @@ pchl:	movw	%bx,%si
 	jmp	fetch2
 jpe1:	getf
 	jpo	bump2b
-	movw	(%esi),%si
+	movw	(RSI),%si
 	jmp	fetch2
 xchgx:	xchgw	%bx,%dx
 	jmp	fetch2
 cpe:	getf
 	jpe	call2
 	jmp	bump2b
-xri:	xorb	(%esi),%al
+xri:	xorb	(RSI),%al
 	jmp	bump1f
 rst5:	movw	5*8,%di
 	jmp	calldi2
@@ -975,7 +1011,7 @@ rst5:	movw	5*8,%di
 # routines used by e0-ff
 
 call2:
-	movw	(%esi),%di
+	movw	(RSI),%di
 	incw	%si
 	incw	%si
 calldi2:			# come here for RSTx, di contains new PC
@@ -998,7 +1034,7 @@ poppsw:	pop1	%ax
 	jmp	fetch2
 jpx:	getf
 	js	bump2b
-	movw	(%esi),%si
+	movw	(RSI),%si
 	jmp	fetch2
 cp:	getf
 	jns	call3
@@ -1007,7 +1043,7 @@ pushpsw:	xchgb	%al,%ah
 	push1	%ax
 	xchgb	%al,%ah
 	jmp	fetch2
-ori:	orb	(%esi),%al
+ori:	orb	(RSI),%al
 	jmp	bump1f
 rst6:	movw	6*8,%di
 	jmp	calldi2
@@ -1019,13 +1055,13 @@ sphl:	movw	%bx,%sp
 	jmp	fetch2
 jm:	getf
 	jns	bump2b
-	movw	(%esi),%si
+	movw	(RSI),%si
 	jmp	fetch2
 call3:	jmp	call2
 cm:	getf
 	js	call3
 	jmp	bump2b
-cpi:	cmpb	(%esi),%al
+cpi:	cmpb	(RSI),%al
 	jmp	bump1f
 rst7:	movw	7*8,%di
 	jmp	calldi2
