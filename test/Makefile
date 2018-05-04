@@ -5,7 +5,10 @@
 
 ISIS=../linux/isis
 
-all : chug testasm.hex
+all : run testasm.hex
+
+run : chug
+	$(ISIS) chug
 
 chug : chug.obj
 	$(ISIS) :f2:link chug.obj,:f2:system.lib,:f2:plm80.lib to chug.lnk
