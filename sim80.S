@@ -30,28 +30,32 @@
 
 #endif
 
+# 8080 register equates
+
+#define PC	RSI
+#define PC16	%si
+#define SP16	%sp
+#define A	%al
+#define FLAGS	%ah
+#define PSW	%ax
+#define B	%ch
+#define C	%cl
+#define BC	%cx
+#define D	%dh
+#define E	%dl
+#define DE	%dx
+#define H	%bh
+#define L	%bl
+#define HL	RBX
+#define HL16	%bx
+#define SCRATCH	RDI
+#define SCRATCH16 %di
+
+
 	.data
 
 	.globl	mem8080		# pointer to base of 8080 memory block, always
 				# guaranteed to have zero in its low 16 bits
-
-# 8080 register equates
-
-#a	 equ	 al
-#flags	 equ	 ah
-#psw	 equ	 ax
-#b	 equ	 ch
-#c	 equ	 cl
-#bc	 equ	 bx
-#d	 equ	 dh
-#e	 equ	 dl
-#de	 equ	 dx
-#h	 equ	 bh
-#l	 equ	 bl
-#hl	 equ	 bx
-#m	 equ	 byte ptr [bx]
-#pc	 equ	 si
-#scratch equ	 di
 
 # Register values passed to ISIS-II from simulator
 
@@ -263,12 +267,12 @@ diok:
 
 dotrace:
 	mov	RDI,traceret		# save place to resume decoding
-	movw	%ax,savepsw
-	movw	%cx,savebc
-	movw	%dx,savede
-	movw	%bx,savehl
-	movw	%sp,savesp
-	movw	%si,savepc
+	movw	PSW,savepsw
+	movw	BC,savebc
+	movw	DE,savede
+	movw	HL16,savehl
+	movw	SP16,savesp
+	movw	PC16,savepc
 	mov	cstack,RSP		# use alternate stack
 	call	trace8080
 resume:
@@ -278,12 +282,12 @@ resume:
 	mov	RAX,RBX
 	mov	RAX,RSP
 	mov	RAX,RSI
-	movw	savepsw,%ax		# set 8080 registers (low words)
-	movw	savebc,%cx
-	movw	savede,%dx
-	movw	savehl,%bx
-	movw	savesp,%sp
-	movw	savepc,%si
+	movw	savepsw,PSW		# set 8080 registers (low words)
+	movw	savebc,BC
+	movw	savede,DE
+	movw	savehl,HL16
+	movw	savesp,SP16
+	movw	savepc,PC16
 	jmp	decode			# resume decoding
 
 # HALT - save registers and call ISIS-II emulator.
@@ -293,12 +297,12 @@ resume:
 # to break emulation.  The FD must be followed by a C9 (RET).
 
 halt:
-	movw	%ax,savepsw
-	movw	%cx,savebc
-	movw	%dx,savede
-	movw	%bx,savehl
-	movw	%sp,savesp
-	movw	%si,savepc
+	movw	PSW,savepsw
+	movw	BC,savebc
+	movw	DE,savede
+	movw	HL16,savehl
+	movw	SP16,savesp
+	movw	PC16,savepc
 	mov	cstack,RSP		# use alternate stack
 	call	isis			# when doing ISIS stuff
 	jmp	resume			# resume decoding
@@ -315,15 +319,15 @@ go8080:
 	mov	mem8080,RAX		# get base of 8080 memory
 	mov	RAX,RCX			# copy it to all 8080 registers
 	mov	RAX,RDX
-	mov	RAX,RBX
+	mov	RAX,HL
 	mov	RAX,RSP
 	mov	RAX,RSI
-	movw	savepsw,%ax		# set 8080 registers (low words)
-	movw	savebc,%cx
-	movw	savede,%dx
-	movw	savehl,%bx
-	movw	savesp,%sp
-	movw	savepc,%si
+	movw	savepsw,PSW		# set 8080 registers (low words)
+	movw	savebc,BC
+	movw	savede,DE
+	movw	savehl,HL16
+	movw	savesp,SP16
+	movw	savepc,PC16
 	jmp	fetch			# start decoding instructions
 
 # FETCH - fetch and decode the next 8080 instruction
@@ -355,25 +359,25 @@ go8080:
 
 bump2f:
 	lahf			# save flags
-	add	$2,RSI		# skip two-byte operand
+	add	$2,PC		# skip two-byte operand
 	jmp	fetch
 bump1f:
 	lahf			# save flags
-	inc	RSI		# skip past one-byte operand
+	inc	PC		# skip past one-byte operand
 	jmp	fetch
 fetchf:
 	lahf			# save flags
 	jmp	fetch
 bump2:
-	incw	%si		# bump program counter by 2
+	incw	PC16		# bump program counter by 2
 bump1:
-	incw	%si		# bump program counter by 1
+	incw	PC16		# bump program counter by 1
 fetch:
 	cmpl	$0, trace	# is trace flag set?
 	jnz	dotrace1
 decode:
-	mov	(RSI),%edi 	# get the opcode
-	inc	RSI		# bump the program counter
+	mov	(PC),%edi 	# get the opcode
+	inc	PC		# bump the program counter
 	and	$0x0ff,RDI 	# mask off high bits of opcode
 #if __i386__
 	shl	$2,RDI		# make it an address pointer
@@ -386,111 +390,111 @@ dotrace1:
 
 # 1-f
 
-lxib:	movw	(RSI),%cx
+lxib:	movw	(PC),BC
 	jmp	bump2
-staxb:	mov	RSI,RDI
-	movw	%cx,%di
+staxb:	mov	PC,SCRATCH
+	movw	BC,SCRATCH16
 	chkdi
-	movb	%al,(RDI)
+	movb	A,(SCRATCH)
 	jmp	fetch
-inxb:	incw	%cx
+inxb:	incw	BC
 	jmp	fetch
 inrb:	getf
-	incb	%ch
+	incb	B
 	jmp	fetchf
 dcrb:	getf
-	decb	%ch
+	decb	B
 	jmp	fetchf
-mvib:	movb	(RSI),%ch
+mvib:	movb	(PC),B
 	jmp	bump1
 	getf
 rlc:	getf
-	rolb	$1,%al
+	rolb	$1,A
 	jmp	fetchf
-dadb:	addw	%cx,%bx
+dadb:	addw	BC,HL16
 testc:	jc	stc1
-clc1:	andb	$0x0fe,%ah
+clc1:	andb	$0x0fe,FLAGS
 	jmp	fetch
-stc1:	orb	$1,%ah
+stc1:	orb	$1,FLAGS
 	jmp	fetch
-ldaxb:	mov	RSI,RDI
-	movw	%cx,%di
-	movb	(RDI),%al
+ldaxb:	mov	PC,SCRATCH
+	movw	BC,SCRATCH16
+	movb	(SCRATCH),A
 	jmp	fetch
-dcxb:	decw	%cx
+dcxb:	decw	BC
 	jmp	fetch
 inrc:	getf
-	incb	%cl
+	incb	C
 	jmp	fetchf
 dcrc:	getf
-	decb	%cl
+	decb	C
 	jmp	fetchf
-mvic:	movb	(RSI),%cl
+mvic:	movb	(PC),C
 	jmp	bump1
 rrc:	getf
-	rorb	$1,%al
+	rorb	$1,A
 	jmp	fetchf
 
 # 10-1f
 
-lxid:	movw	(RSI),%dx
+lxid:	movw	(PC),DE
 	jmp	bump2
-staxd:	mov	RSI,RDI
-	movw	%dx,%di
+staxd:	mov	PC,SCRATCH
+	movw	DE,SCRATCH16
 	chkdi
-	movb	%al,(RDI)
+	movb	A,(SCRATCH)
 	jmp	fetch
-inxd:	incw	%dx
+inxd:	incw	DE
 	jmp	fetch
 inrd:	getf
-	incb	%dh
+	incb	D
 	jmp	fetchf
 dcrd:	getf
-	decb	%dh
+	decb	D
 	jmp	fetchf
-mvid:	movb	(RSI),%dh
+mvid:	movb	(PC),D
 	jmp	bump1
 ral:	getf
-	rclb	$1,%al
+	rclb	$1,A
 	jmp	fetchf
-dadd:	addw	%dx,%bx
+dadd:	addw	DE,HL16
 	jmp	testc
-ldaxd:	mov	RSI,RDI
-	movw	%dx,%di
-	movb	(RDI),%al
+ldaxd:	mov	PC,SCRATCH
+	movw	DE,SCRATCH16
+	movb	(SCRATCH),A
 	jmp	fetch
-dcxd:	decw	%dx
+dcxd:	decw	DE
 	jmp	fetch
 inre:	getf
-	incb	%dl
+	incb	E
 	jmp	fetchf
 dcre:	getf
-	decb	%dl
+	decb	E
 	jmp	fetchf
-mvie:	movb	(RSI),%dl
+mvie:	movb	(PC),E
 	jmp	bump1
 rar:	getf
-	rcrb	$1,%al
+	rcrb	$1,A
 	jmp	fetchf
 
 # 20-2f
 
-lxih:	movw	(RSI),%bx
+lxih:	movw	(PC),HL16
 	jmp	bump2
-shldx:	mov	RSI,RDI
-	movw	(RSI),%di
+shldx:	mov	PC,SCRATCH
+	movw	(PC),SCRATCH16
 	chkdi
-	movw	%bx,(RDI)
+	movw	HL16,(SCRATCH)
 	jmp	bump2
-inxh:	incw	%bx
+inxh:	incw	HL16
 	jmp	fetch
 inrh:	getf
-	incb	%bh
+	incb	H
 	jmp	fetchf
 dcrh:	getf
-	decb	%bh
+	decb	H
 	jmp	fetchf
-mvih:	movb	(RSI),%bh
+mvih:	movb	(PC),H
 	jmp	bump1
 daa1:	getf
 #if __i386__
@@ -499,431 +503,431 @@ daa1:	getf
 	jmp	halt
 #endif
 	jmp	fetchf
-dadh:	addw	%bx,%bx
+dadh:	addw	HL16,HL16
 	jmp	testc
-lhld:	mov	RSI,RDI
-	movw	(RSI),%di
+lhld:	mov	PC,SCRATCH
+	movw	(PC),SCRATCH16
 	chkdi
-	movw	(RDI),%bx
+	movw	(SCRATCH),HL16
 	jmp	bump2
-dcxh:	decw	%bx
+dcxh:	decw	HL16
 	jmp	fetch
 inrl:	getf
-	incb	%bl
+	incb	L
 	jmp	fetchf
 dcrl:	getf
-	decb	%bl
+	decb	L
 	jmp	fetchf
-mvil:	movb	(RSI),%bl
+mvil:	movb	(PC),L
 	jmp	bump1
-cma:	notb	%al
+cma:	notb	A
 	jmp	fetch
 
 # 30-3F
 
-lxisp:	movw	(RSI),%sp
+lxisp:	movw	(PC),SP16
 	jmp	bump2
-sta:	mov	RSI,RDI
-	movw	(RSI),%di
+sta:	mov	PC,SCRATCH
+	movw	(PC),SCRATCH16
 	chkdi
-	movb	%al,(RDI)
+	movb	A,(SCRATCH)
 	jmp	bump2
-inxsp:	incw	%sp
+inxsp:	incw	SP16
 	jmp	fetch
 inrm:	chkbx
 	getf
-	incb	(RBX)
+	incb	(HL)
 	jmp	fetchf
 dcrm:	chkbx
 	getf
-	decb	(RBX)
+	decb	(HL)
 	jmp	fetchf
-mvim:	mov	RSI,RDI
-	movw	%bx,%di
+mvim:	mov	PC,SCRATCH
+	movw	HL16,SCRATCH16
 	chkdi
-	movb	(RSI),%bl
-	movb	%bl,(RDI)
-	movw	%di,%bx
+	movb	(PC),L
+	movb	L,(SCRATCH)
+	movw	SCRATCH16,HL16
 	jmp	bump1
-dadsp:	addw	%sp,%bx
+dadsp:	addw	SP16,HL16
 	jmp	testc
-lda:	mov	RSI,RDI
-	movw	(RSI),%di
-	movb	(RDI),%al
+lda:	mov	PC,SCRATCH
+	movw	(PC),SCRATCH16
+	movb	(SCRATCH),A
 	jmp	bump2
-dcxsp:	decw	%sp
+dcxsp:	decw	SP16
 	jmp	fetch
 inra:	getf
-	incb	%al
+	incb	A
 	jmp	fetchf
 dcra:	getf
-	decb	%al
+	decb	A
 	jmp	fetchf
-mvia:	movb	(RSI),%al
+mvia:	movb	(PC),A
 	jmp	bump1
-cmc1:	xorb	$1,%ah
+cmc1:	xorb	$1,FLAGS
 	jmp	fetch
 
 # 40-4F
 
-movbb:	movb	%ch,%ch
+movbb:	movb	B,B
 	jmp	fetch
-movbc:	movb	%cl,%ch
+movbc:	movb	C,B
 	jmp	fetch
-movbd:	movb	%dh,%ch
+movbd:	movb	D,B
 	jmp	fetch
-movbe:	movb	%dl,%ch
+movbe:	movb	E,B
 	jmp	fetch
-movbh:	movb	%bh,%ch
+movbh:	movb	H,B
 	jmp	fetch
-movbl:	movb	%bl,%ch
+movbl:	movb	L,B
 	jmp	fetch
-movbm:	movb	(RBX),%ch
+movbm:	movb	(HL),B
 	jmp	fetch
-movba:	movb	%al,%ch
+movba:	movb	A,B
 	jmp	fetch
-movcb:	movb	%ch,%cl
+movcb:	movb	B,C
 	jmp	fetch
-movcc:	movb	%cl,%cl
+movcc:	movb	C,C
 	jmp	fetch
-movcd:	movb	%dh,%cl
+movcd:	movb	D,C
 	jmp	fetch
-movce:	movb	%dl,%cl
+movce:	movb	E,C
 	jmp	fetch
-movch:	movb	%bh,%cl
+movch:	movb	H,C
 	jmp	fetch
-movcl:	movb	%bl,%cl
+movcl:	movb	L,C
 	jmp	fetch
-movcm:	movb	(RBX),%cl
+movcm:	movb	(HL),C
 	jmp	fetch
-movca:	movb	%al,%cl
+movca:	movb	A,C
 	jmp	fetch
 
 # 50-5F
 
-movdb:	movb	%ch,%dh
+movdb:	movb	B,D
 	jmp	fetch
-movdc:	movb	%cl,%dh
+movdc:	movb	C,D
 	jmp	fetch
-movdd:	movb	%dh,%dh
+movdd:	movb	D,D
 	jmp	fetch
-movde:	movb	%dl,%dh
+movde:	movb	E,D
 	jmp	fetch
-movdh:	movb	%bh,%dh
+movdh:	movb	H,D
 	jmp	fetch
-movdl:	movb	%bl,%dh
+movdl:	movb	L,D
 	jmp	fetch
-movdm:	movb	(RBX),%dh
+movdm:	movb	(HL),D
 	jmp	fetch
-movda:	movb	%al,%dh
+movda:	movb	A,D
 	jmp	fetch
-moveb:	movb	%ch,%dl
+moveb:	movb	B,E
 	jmp	fetch
-movec:	movb	%cl,%dl
+movec:	movb	C,E
 	jmp	fetch
-moved:	movb	%dh,%dl
+moved:	movb	D,E
 	jmp	fetch
-movee:	movb	%dl,%dl
+movee:	movb	E,E
 	jmp	fetch
-moveh:	movb	%bh,%dl
+moveh:	movb	H,E
 	jmp	fetch
-movel:	movb	%bl,%dl
+movel:	movb	L,E
 	jmp	fetch
-movem:	movb	(RBX),%dl
+movem:	movb	(HL),E
 	jmp	fetch
-movea:	movb	%al,%dl
+movea:	movb	A,E
 	jmp	fetch
 
 # 60-6F
 
-movhb:	movb	%ch,%bh
+movhb:	movb	B,H
 	jmp	fetch
-movhc:	movb	%cl,%bh
+movhc:	movb	C,H
 	jmp	fetch
-movhd:	movb	%dh,%bh
+movhd:	movb	D,H
 	jmp	fetch
-movhe:	movb	%dl,%bh
+movhe:	movb	E,H
 	jmp	fetch
-movhh:	movb	%bh,%bh
+movhh:	movb	H,H
 	jmp	fetch
-movhl:	movb	%bl,%bh
+movhl:	movb	L,H
 	jmp	fetch
-movhm:	movb	(RBX),%bh
+movhm:	movb	(HL),H
 	jmp	fetch
-movha:	movb	%al,%bh
+movha:	movb	A,H
 	jmp	fetch
-movlb:	movb	%ch,%bl
+movlb:	movb	B,L
 	jmp	fetch
-movlc:	movb	%cl,%bl
+movlc:	movb	C,L
 	jmp	fetch
-movld:	movb	%dh,%bl
+movld:	movb	D,L
 	jmp	fetch
-movle:	movb	%dl,%bl
+movle:	movb	E,L
 	jmp	fetch
-movlh:	movb	%bh,%bl
+movlh:	movb	H,L
 	jmp	fetch
-movll:	movb	%bl,%bl
+movll:	movb	L,L
 	jmp	fetch
-movlm:	movb	(RBX),%bl
+movlm:	movb	(HL),L
 	jmp	fetch
-movla:	movb	%al,%bl
+movla:	movb	A,L
 	jmp	fetch
 
 # 70-7F
 
 movmb:	chkbx
-	movb	%ch,(RBX)
+	movb	B,(HL)
 	jmp	fetch
 movmc:	chkbx
-	movb	%cl,(RBX)
+	movb	C,(HL)
 	jmp	fetch
 movmd:	chkbx
-	movb	%dh,(RBX)
+	movb	D,(HL)
 	jmp	fetch
 movme:	chkbx
-	movb	%dl,(RBX)
+	movb	E,(HL)
 	jmp	fetch
 movmh:	chkbx
-	movb	%bh,(RBX)
+	movb	H,(HL)
 	jmp	fetch
 movml:	chkbx
-	movb	%bl,(RBX)
+	movb	L,(HL)
 	jmp	fetch
 movma:	chkbx
-	movb	%al,(RBX)
+	movb	A,(HL)
 	jmp	fetch
-movab:	movb	%ch,%al
+movab:	movb	B,A
 	jmp	fetch
-movac:	movb	%cl,%al
+movac:	movb	C,A
 	jmp	fetch
-movad:	movb	%dh,%al
+movad:	movb	D,A
 	jmp	fetch
-movae:	movb	%dl,%al
+movae:	movb	E,A
 	jmp	fetch
-movah:	movb	%bh,%al
+movah:	movb	H,A
 	jmp	fetch
-moval:	movb	%bl,%al
+moval:	movb	L,A
 	jmp	fetch
-movam:	movb	(RBX),%al
+movam:	movb	(HL),A
 	jmp	fetch
-movaa:	movb	%al,%al
+movaa:	movb	A,A
 	jmp	fetch
 
 # 80-8F
 
-addb:	addb	%ch,%al
+addb:	addb	B,A
 	jmp	fetchf
-addc:	addb	%cl,%al
+addc:	addb	C,A
 	jmp	fetchf
-addd:	addb	%dh,%al
+addd:	addb	D,A
 	jmp	fetchf
-adde:	addb	%dl,%al
+adde:	addb	E,A
 	jmp	fetchf
-addh:	addb	%bh,%al
+addh:	addb	H,A
 	jmp	fetchf
-addl:	addb	%bl,%al
+addl:	addb	L,A
 	jmp	fetchf
-addm:	addb	(RBX),%al
+addm:	addb	(HL),A
 	jmp	fetchf
-adda:	addb	%al,%al
+adda:	addb	A,A
 	jmp	fetchf
 adcb:	getf
-	adcb	%ch,%al
+	adcb	B,A
 	jmp	fetchf
 adcc:	getf
-	adcb	%cl,%al
+	adcb	C,A
 	jmp	fetchf
 adcd:	getf
-	adcb	%dh,%al
+	adcb	D,A
 	jmp	fetchf
 adce:	getf
-	adcb	%dl,%al
+	adcb	E,A
 	jmp	fetchf
 adch:	getf
-	adcb	%bh,%al
+	adcb	H,A
 	jmp	fetchf
 adcl:	getf
-	adcb	%bl,%al
+	adcb	L,A
 	jmp	fetchf
 adcm:	getf
-	adcb	(RBX),%al
+	adcb	(HL),A
 	jmp	fetchf
 adca:	getf
-	adcb	%al,%al
+	adcb	A,A
 	jmp	fetchf
 
 # 90-9F
 
 subb:
-	subb	%ch,%al
+	subb	B,A
 	jmp	fetchf
 subc:
-	subb	%cl,%al
+	subb	C,A
 	jmp	fetchf
 subd:
-	subb	%dh,%al
+	subb	D,A
 	jmp	fetchf
 sube:
-	subb	%dl,%al
+	subb	E,A
 	jmp	fetchf
 subh:
-	subb	%bh,%al
+	subb	H,A
 	jmp	fetchf
 subl:
-	subb	%bl,%al
+	subb	L,A
 	jmp	fetchf
 subm:
-	subb	(RBX),%al
+	subb	(HL),A
 	jmp	fetchf
 suba:
-	subb	%al,%al
+	subb	A,A
 	jmp	fetchf
 sbbb:	getf
-	sbbb	%ch,%al
+	sbbb	B,A
 	jmp	fetchf
 sbbc:	getf
-	sbbb	%cl,%al
+	sbbb	C,A
 	jmp	fetchf
 sbbd:	getf
-	sbbb	%dh,%al
+	sbbb	D,A
 	jmp	fetchf
 sbbe:	getf
-	sbbb	%dl,%al
+	sbbb	E,A
 	jmp	fetchf
 sbbh:	getf
-	sbbb	%bh,%al
+	sbbb	H,A
 	jmp	fetchf
 sbbl:	getf
-	sbbb	%bl,%al
+	sbbb	L,A
 	jmp	fetchf
 sbbm:	getf
-	sbbb	(RBX),%al
+	sbbb	(HL),A
 	jmp	fetchf
 sbba:	getf
-	sbbb	%al,%al
+	sbbb	A,A
 	jmp	fetchf
 
 # a0-aF
 
-anab:	andb	%ch,%al
+anab:	andb	B,A
 	jmp	fetchf
-anac:	andb	%cl,%al
+anac:	andb	C,A
 	jmp	fetchf
-anad:	andb	%dh,%al
+anad:	andb	D,A
 	jmp	fetchf
-anae:	andb	%dl,%al
+anae:	andb	E,A
 	jmp	fetchf
-anah:	andb	%bh,%al
+anah:	andb	H,A
 	jmp	fetchf
-anal:	andb	%bl,%al
+anal:	andb	L,A
 	jmp	fetchf
-anam:	andb	(RBX),%al
+anam:	andb	(HL),A
 	jmp	fetchf
-anaa:	andb	%al,%al
+anaa:	andb	A,A
 	jmp	fetchf
-xrab:	xorb	%ch,%al
+xrab:	xorb	B,A
 	jmp	fetchf
-xrac:	xorb	%cl,%al
+xrac:	xorb	C,A
 	jmp	fetchf
-xrad:	xorb	%dh,%al
+xrad:	xorb	D,A
 	jmp	fetchf
-xrae:	xorb	%dl,%al
+xrae:	xorb	E,A
 	jmp	fetchf
-xrah:	xorb	%bh,%al
+xrah:	xorb	H,A
 	jmp	fetchf
-xral:	xorb	%bl,%al
+xral:	xorb	L,A
 	jmp	fetchf
-xram:	xorb	(RBX),%al
+xram:	xorb	(HL),A
 	jmp	fetchf
-xraa:	xorb	%al,%al
+xraa:	xorb	A,A
 	jmp	fetchf
 
 # b0-bF
 
-orab:	orb	%ch,%al
+orab:	orb	B,A
 	jmp	fetchf
-orac:	orb	%cl,%al
+orac:	orb	C,A
 	jmp	fetchf
-orad:	orb	%dh,%al
+orad:	orb	D,A
 	jmp	fetchf
-orae:	orb	%dl,%al
+orae:	orb	E,A
 	jmp	fetchf
-orah:	orb	%bh,%al
+orah:	orb	H,A
 	jmp	fetchf
-oral:	orb	%bl,%al
+oral:	orb	L,A
 	jmp	fetchf
-oram:	orb	(RBX),%al
+oram:	orb	(HL),A
 	jmp	fetchf
-oraa:	orb	%al,%al
+oraa:	orb	A,A
 	jmp	fetchf
-cmpb:	cmpb	%ch,%al
+cmpb:	cmpb	B,A
 	jmp	fetchf
-cmpc:	cmpb	%cl,%al
+cmpc:	cmpb	C,A
 	jmp	fetchf
-cmpd:	cmpb	%dh,%al
+cmpd:	cmpb	D,A
 	jmp	fetchf
-cmpe:	cmpb	%dl,%al
+cmpe:	cmpb	E,A
 	jmp	fetchf
-cmph:	cmpb	%bh,%al
+cmph:	cmpb	H,A
 	jmp	fetchf
-cmpl:	cmpb	%bl,%al
+cmpl:	cmpb	L,A
 	jmp	fetchf
-cmpm:	cmpb	(RBX),%al
+cmpm:	cmpb	(HL),A
 	jmp	fetchf
-cmpa:	cmpb	%al,%al
+cmpa:	cmpb	A,A
 	jmp	fetchf
 
 # c0 - cf
 
 rnz:	getf
 	jz	fetch1
-	pop1	%si
+	pop1	PC16
 	jmp	fetch1
-popb:	pop1	%cx
+popb:	pop1	BC
 	jmp	fetch1
 jnz1:	getf
 	jz	bump2a
-jmp1:	movw	(RSI),%si
+jmp1:	movw	(PC),PC16
 	jmp	fetch1
 cnz:	getf
 	jnz	call1
 	jmp	bump2a
-pushb:	push1	%cx
+pushb:	push1	BC
 	jmp	fetch1
-adi:	addb	(RSI),%al
+adi:	addb	(PC),A
 	jmp	bump1f
-rst0:	xorw	%di,%di
+rst0:	xorw	SCRATCH16,SCRATCH16
 	jmp	calldi1
 rz:	getf
 	jnz	fetch1
-ret1:	pop1	%si
+ret1:	pop1	PC16
 	jmp	fetch1
 jz1:	getf
 	jnz	bump2a
-	movw	(RSI),%si
+	movw	(PC),PC16
 	jmp	fetch1
 cz:	getf
 	jz	call1
 	jmp	bump2a
 aci:	getf
-	adcb	(RSI),%al
+	adcb	(PC),A
 	jmp	bump1f
-rst1:	movw	$8,%di
+rst1:	movw	$8,SCRATCH16
 	jmp	calldi1
 
 # routines used by c0-df
 
 call1:
-	movw	(RSI),%di
-	incw	%si
-	incw	%si
+	movw	(PC),SCRATCH16
+	incw	PC16
+	incw	PC16
 calldi1:			# come here for RSTx, di contains new PC
-	push1	%si
-	movw	%di,%si
+	push1	PC16
+	movw	SCRATCH16,PC16
 fetch1:
 	jmp	fetch
 bump2a:
-	addw	$2,%si		# skip past two-byte operand
+	addw	$2,PC16		# skip past two-byte operand
 	jmp	fetch
 
 # d0 - df
@@ -931,138 +935,138 @@ bump2a:
 call4:	jmp	call1
 rnc:	getf
 	jc	fetch1
-	pop1	%si
+	pop1	PC16
 	jmp	fetch1
-popd:	pop1	%dx
+popd:	pop1	DE
 	jmp	fetch1
 jnc1:	getf
 	jc	bump2a
-	movw	(RSI),%si
+	movw	(PC),PC16
 	jmp	fetch1
 cnc:	getf
 	jnc	call4
 	jmp	bump2a
-pushd:	push1	%dx
+pushd:	push1	DE
 	jmp	fetch1
-sui:	subb	(RSI),%al
+sui:	subb	(PC),A
 	jmp	bump1f
-rst2:	movw	2*8,%di
+rst2:	movw	2*8,SCRATCH16
 	jmp	calldi1
 rc:	getf
 	jnc	fetch4
-	pop1	%si
+	pop1	PC16
 fetch4:	jmp	fetch1
 jc1:	getf
 	jnc	bump2a
-	movw	(RSI),%si
+	movw	(PC),PC16
 	jmp	fetch1
 cc:	getf
 	jc	call2
 	jmp	bump2a
 sbi:	getf
-	sbbb	(RSI),%al
+	sbbb	(PC),A
 	jmp	bump1f
-rst3:	movw	3*8,%di
+rst3:	movw	3*8,SCRATCH16
 	jmp	calldi2
 
 # e0 - ef
 
 rpo:	getf
 	jpe	fetch2
-	pop1	%si
+	pop1	PC16
 	jmp	fetch2
-poph:	pop1	%bx
+poph:	pop1	HL16
 	jmp	fetch2
 jpo1:	getf
 	jpe	bump2c
-	movw	(RSI),%si
+	movw	(PC),PC16
 	jmp	fetch2
-xthl:	xchgw	(RSP),%bx
+xthl:	xchgw	(RSP),HL16
 	jmp	fetch2
 cpo:	getf
 	jpo	call2
 bump2c:	jmp	bump2b
-pushh:	push1	%bx
+pushh:	push1	HL16
 	jmp	fetch2
-ani:	andb	(RSI),%al
+ani:	andb	(PC),A
 	jmp	bump1f
-rst4:	movw	4*8,%di
+rst4:	movw	4*8,SCRATCH16
 	jmp	calldi2
 rpe:	getf
 	jpo	fetch2
-	pop1	%si
+	pop1	PC16
 	jmp	fetch2
-pchl:	movw	%bx,%si
+pchl:	movw	HL16,PC16
 	jmp	fetch2
 jpe1:	getf
 	jpo	bump2b
-	movw	(RSI),%si
+	movw	(PC),PC16
 	jmp	fetch2
-xchgx:	xchgw	%bx,%dx
+xchgx:	xchgw	HL16,DE
 	jmp	fetch2
 cpe:	getf
 	jpe	call2
 	jmp	bump2b
-xri:	xorb	(RSI),%al
+xri:	xorb	(PC),A
 	jmp	bump1f
-rst5:	movw	5*8,%di
+rst5:	movw	5*8,SCRATCH16
 	jmp	calldi2
 
 # routines used by e0-ff
 
 call2:
-	movw	(RSI),%di
-	incw	%si
-	incw	%si
+	movw	(PC),SCRATCH16
+	incw	PC16
+	incw	PC16
 calldi2:			# come here for RSTx, di contains new PC
-	push1	%si
-	movw	%di,%si
+	push1	PC16
+	movw	SCRATCH16,PC16
 fetch2:
 	jmp	fetch
 bump2b:
-	addw	$2,%si		# skip past two byte operand
+	addw	$2,PC16		# skip past two byte operand
 	jmp	fetch
 
 # f0 - ff
 
 rp:	getf
 	js	fetch2
-	pop1	%si
+	pop1	PC16
 	jmp	fetch2
-poppsw:	pop1	%ax
-	xchgb	%al,%ah
+poppsw:	pop1	PSW
+	xchgb	A,FLAGS
 	jmp	fetch2
 jpx:	getf
 	js	bump2b
-	movw	(RSI),%si
+	movw	(PC),PC16
 	jmp	fetch2
 cp:	getf
 	jns	call3
 	jmp	bump2b
-pushpsw:	xchgb	%al,%ah
-	push1	%ax
-	xchgb	%al,%ah
+pushpsw:	xchgb	A,FLAGS
+	push1	PSW
+	xchgb	A,FLAGS
 	jmp	fetch2
-ori:	orb	(RSI),%al
+ori:	orb	(PC),A
 	jmp	bump1f
-rst6:	movw	6*8,%di
+rst6:	movw	6*8,SCRATCH16
 	jmp	calldi2
 rm:	getf
 	jns	fetch3
-	pop1	%si
+	pop1	PC16
 fetch3:	jmp	fetch2
-sphl:	movw	%bx,%sp
+sphl:	movw	HL16,SP16
 	jmp	fetch2
 jm:	getf
 	jns	bump2b
-	movw	(RSI),%si
+	movw	(PC),PC16
 	jmp	fetch2
 call3:	jmp	call2
 cm:	getf
 	js	call3
 	jmp	bump2b
-cpi:	cmpb	(RSI),%al
+cpi:	cmpb	(PC),A
 	jmp	bump1f
-rst7:	movw	7*8,%di
+rst7:	movw	7*8,SCRATCH16
 	jmp	calldi2
 
