@@ -376,15 +376,15 @@ fetch:
 	cmpl	$0, trace	# is trace flag set?
 	jnz	dotrace1
 decode:
-	mov	(PC),%edi 	# get the opcode
+	mov	(PC),SCRATCH16 	# get the opcode
 	inc	PC		# bump the program counter
-	and	$0x0ff,RDI 	# mask off high bits of opcode
+	and	$0x0ff,SCRATCH 	# mask off high bits of opcode
 #if __i386__
-	shl	$2,RDI		# make it an address pointer
+	shl	$2,SCRATCH	# make it an address pointer
 #else
-	shl	$3,RDI		# make it an address pointer
+	shl	$3,SCRATCH	# make it an address pointer
 #endif
-	jmp	*jmptab(RDI)	# jump to appropriate instruction handler
+	jmp	*jmptab(SCRATCH) # jump to appropriate instruction handler
 dotrace1:
 	jmp	dotrace
 
