@@ -1,0 +1,10 @@
+*.[oadi]
+cscope.out
+cscope.files
+*.lst
+*.obj
+*.lnk
+linux/isis
+linux/junk
+test/chug
+test/testasm.hex
