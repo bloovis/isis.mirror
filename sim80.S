@@ -80,6 +80,32 @@ trace:	.int	0
 traceret:
 	wptr	0
 
+# Access variables in position-independent manner on 64-bit.
+
+#if __i386__
+#define MEM8080  mem8080
+#define SAVEPSW savepsw
+#define SAVEBC savebc
+#define SAVEDE savede
+#define SAVEHL savehl
+#define SAVESP savesp
+#define SAVEPC savepc
+#define CSTACK cstack
+#define TRACERET traceret
+#define TRACE    trace
+#else
+#define MEM8080  mem8080(%rip)
+#define SAVEPSW savepsw(%rip)
+#define SAVEBC savebc(%rip)
+#define SAVEDE savede(%rip)
+#define SAVEHL savehl(%rip)
+#define SAVESP savesp(%rip)
+#define SAVEPC savepc(%rip)
+#define CSTACK cstack(%rip)
+#define TRACERET traceret(%rip)
+#define TRACE    trace(%rip)
+#endif
+
 # JMPTAB - table of instruction handlers, indexed by opcode 0-255
 
 jmptab:	wptr	fetch,lxib		# 0,1
@@ -266,28 +292,28 @@ diok:
 # dotrace - save registers and call instruction trace printer
 
 dotrace:
-	mov	RDI,traceret		# save place to resume decoding
-	movw	PSW,savepsw
-	movw	BC,savebc
-	movw	DE,savede
-	movw	HL16,savehl
-	movw	SP16,savesp
-	movw	PC16,savepc
-	mov	cstack,RSP		# use alternate stack
+	mov	RDI,TRACERET		# save place to resume decoding
+	movw	PSW,SAVEPSW
+	movw	BC,SAVEBC
+	movw	DE,SAVEDE
+	movw	HL16,SAVEHL
+	movw	SP16,SAVESP
+	movw	PC16,SAVEPC
+	mov	CSTACK,RSP		# use alternate stack
 	call	trace8080
 resume:
-	mov	mem8080,RAX		# get base of 8080 memory
+	mov	MEM8080,RAX		# get base of 8080 memory
 	mov	RAX,RCX			# copy it to all 8080 registers
 	mov	RAX,RDX
 	mov	RAX,RBX
 	mov	RAX,RSP
 	mov	RAX,RSI
-	movw	savepsw,PSW		# set 8080 registers (low words)
-	movw	savebc,BC
-	movw	savede,DE
-	movw	savehl,HL16
-	movw	savesp,SP16
-	movw	savepc,PC16
+	movw	SAVEPSW,PSW		# set 8080 registers (low words)
+	movw	SAVEBC,BC
+	movw	SAVEDE,DE
+	movw	SAVEHL,HL16
+	movw	SAVESP,SP16
+	movw	SAVEPC,PC16
 	jmp	decode			# resume decoding
 
 # HALT - save registers and call ISIS-II emulator.
@@ -297,13 +323,13 @@ resume:
 # to break emulation.  The FD must be followed by a C9 (RET).
 
 halt:
-	movw	PSW,savepsw
-	movw	BC,savebc
-	movw	DE,savede
-	movw	HL16,savehl
-	movw	SP16,savesp
-	movw	PC16,savepc
-	mov	cstack,RSP		# use alternate stack
+	movw	PSW,SAVEPSW
+	movw	BC,SAVEBC
+	movw	DE,SAVEDE
+	movw	HL16,SAVEHL
+	movw	SP16,SAVESP
+	movw	PC16,SAVEPC
+	mov	CSTACK,RSP		# use alternate stack
 	call	isis			# when doing ISIS stuff
 	jmp	resume			# resume decoding
 
@@ -315,19 +341,19 @@ halt:
 	.globl	go8080
 
 go8080:
-	mov	RSP,cstack		# save C stack pointer
-	mov	mem8080,RAX		# get base of 8080 memory
+	mov	RSP,CSTACK		# save C stack pointer
+	mov	MEM8080,RAX		# get base of 8080 memory
 	mov	RAX,RCX			# copy it to all 8080 registers
 	mov	RAX,RDX
 	mov	RAX,HL
 	mov	RAX,RSP
 	mov	RAX,RSI
-	movw	savepsw,PSW		# set 8080 registers (low words)
-	movw	savebc,BC
-	movw	savede,DE
-	movw	savehl,HL16
-	movw	savesp,SP16
-	movw	savepc,PC16
+	movw	SAVEPSW,PSW		# set 8080 registers (low words)
+	movw	SAVEBC,BC
+	movw	SAVEDE,DE
+	movw	SAVEHL,HL16
+	movw	SAVESP,SP16
+	movw	SAVEPC,PC16
 	jmp	fetch			# start decoding instructions
 
 # FETCH - fetch and decode the next 8080 instruction
@@ -373,7 +399,7 @@ bump2:
 bump1:
 	incw	PC16		# bump program counter by 1
 fetch:
-	cmpl	$0, trace	# is trace flag set?
+	cmpl	$0, TRACE	# is trace flag set?
 	jnz	dotrace1
 decode:
 	mov	(PC),SCRATCH16 	# get the opcode
@@ -381,10 +407,11 @@ decode:
 	and	$0x0ff,SCRATCH 	# mask off high bits of opcode
 #if __i386__
 	shl	$2,SCRATCH	# make it an address pointer
-#else
-	shl	$3,SCRATCH	# make it an address pointer
-#endif
 	jmp	*jmptab(SCRATCH) # jump to appropriate instruction handler
+#else
+	leaq	jmptab(%rip), %r8
+	jmp	*(%r8, SCRATCH, 8)
+#endif
 dotrace1:
 	jmp	dotrace
 
