@@ -2,12 +2,13 @@
 
 #include <unistd.h>
 #include <stdio.h>
+#include <string.h>
 
 #include "isis.h"
 
 // externals from isis.c
 
-extern char * mem8080;
+extern BYTE * mem8080;
 
 // local variables
 
@@ -117,7 +118,7 @@ static void dcmd (void)
 
 /* XCMD - print register values */
 
-BYTE *flagchar = "SZ-A-P-C";
+const char *flagchar = "SZ-A-P-C";
 
 static void xcmd (void)
 {

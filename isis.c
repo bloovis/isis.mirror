@@ -17,7 +17,7 @@ extern int step;
 // are guaranteed to be zero, so that the simulator only has to worry
 // about manipulation the low 16 bits of registers.
 
-char *mem8080;
+BYTE *mem8080;
 
 // True if tracing system calls
 
@@ -206,7 +206,7 @@ void cvtfname(
   char * dest,		// buffer to store converted name
   int cvtdevice)	// if true, convert device name prefix
 {
-    const char * name = &mem8080[nameadr];
+    const char * name = (const char *)&mem8080[nameadr];
     int		 count;
     char	 c;
     char	 device[8];	// ISIS_XX, where XX is F0, F1, etc.
@@ -892,7 +892,7 @@ void iwhocon (WHBLK *pblk)
 void ispath (SPBLK *pblk)
 {
     BYTE *buf;
-    BYTE *fname;
+    char *fname;
     BYTE c;
 
     cvtfname(pblk->sp_file,fname1,0); /* convert the filename */
@@ -1102,11 +1102,11 @@ void initisis (int argc, char *argv[])
 	    usage ();
 	else
 	{
-	    if (strlen (arg) + strlen (f->f_lbuf) + 3 > sizeof (f->f_lbuf))
+	    if (strlen (arg) + strlen ((const char *)f->f_lbuf) + 3 > sizeof (f->f_lbuf))
 		break;
-	    if (strlen(f->f_lbuf) != 0)
-		strcat (f->f_lbuf, " ");
-	    strcat (f->f_lbuf, arg);
+	    if (strlen((const char *) f->f_lbuf) != 0)
+		strcat ((char *)f->f_lbuf, " ");
+	    strcat ((char *)f->f_lbuf, arg);
 	    if (firstarg == NULL)
 		firstarg = arg;
 	}
@@ -1119,8 +1119,8 @@ void initisis (int argc, char *argv[])
 
     // Append CRLF to command line.
 
-    strcat (f->f_lbuf, "\r\n");
-    f->f_count = strlen (f->f_lbuf);
+    strcat ((char *)f->f_lbuf, "\r\n");
+    f->f_count = strlen ((const char *)f->f_lbuf);
     f->f_index = 0;
 
     if (tracesys)
@@ -1142,7 +1142,7 @@ void initisis (int argc, char *argv[])
     // Removing the high 16 bits of the address works because the
     // buffer is in 8080 memory space.  But it causes a gcc warning.
 
-    pblk.l_file = (WORD) (int) &f->f_lbuf[f->f_index];
+    pblk.l_file = (WORD) (long) &f->f_lbuf[f->f_index];
 
     // skip read pointer past filename to command to tail
     while (f->f_lbuf[f->f_index] != ' ' && f->f_lbuf[f->f_index] != '\r')
@@ -1180,7 +1180,7 @@ int main (int argc, char *argv[])
      */
     base = (long) malloc (0x20000);
     base = (base + 0xffff) & ~0xffff;
-    mem8080 = (char *)base;
+    mem8080 = (BYTE *)base;
     
     brkinst = brk_8088;
     sizebrk = sizeof(brk_8088);

@@ -8,7 +8,7 @@
 // are guaranteed to be zero, so that the similator only has to worry
 // about manipulation the low 16 bits of registers.
 
-extern char *mem8080;
+extern BYTE *mem8080;
 
 // Flag in instruction simulator to force call to trace8080 ()
 // before each instruction is executed.
