@@ -992,7 +992,7 @@ pushd:	push1	DE
 	jmp	fetch1
 sui:	subb	(PC),A
 	jmp	bump1f
-rst2:	movw	2*8,SCRATCH16
+rst2:	movw	$2*8,SCRATCH16
 	jmp	calldi1
 rc:	getf
 	jnc	fetch4
@@ -1008,7 +1008,7 @@ cc:	getf
 sbi:	getf
 	sbbb	(PC),A
 	jmp	bump1f
-rst3:	movw	3*8,SCRATCH16
+rst3:	movw	$3*8,SCRATCH16
 	jmp	calldi2
 
 # e0 - ef
@@ -1032,7 +1032,7 @@ pushh:	push1	HL16
 	jmp	fetch2
 ani:	andb	(PC),A
 	jmp	bump1f
-rst4:	movw	4*8,SCRATCH16
+rst4:	movw	$4*8,SCRATCH16
 	jmp	calldi2
 rpe:	getf
 	jpo	fetch2
@@ -1051,7 +1051,7 @@ cpe:	getf
 	jmp	bump2b
 xri:	xorb	(PC),A
 	jmp	bump1f
-rst5:	movw	5*8,SCRATCH16
+rst5:	movw	$5*8,SCRATCH16
 	jmp	calldi2
 
 # routines used by e0-ff
@@ -1091,7 +1091,7 @@ pushpsw:	xchgb	A,FLAGS
 	jmp	fetch2
 ori:	orb	(PC),A
 	jmp	bump1f
-rst6:	movw	6*8,SCRATCH16
+rst6:	movw	$6*8,SCRATCH16
 	jmp	calldi2
 rm:	getf
 	jns	fetch3
@@ -1109,6 +1109,6 @@ cm:	getf
 	jmp	bump2b
 cpi:	cmpb	(PC),A
 	jmp	bump1f
-rst7:	movw	7*8,SCRATCH16
+rst7:	movw	$7*8,SCRATCH16
 	jmp	calldi2
 
