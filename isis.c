@@ -47,6 +47,10 @@ int tracesys;
 
 int debugger;
 
+// True if tracing loader operation
+
+int traceload;
+
 // ISIS, MDS Monitor entry points and special locations
 
 #define ISIS	0x40		/* ISIS entry point */
@@ -185,8 +189,8 @@ typedef struct spblk	/* SPATH call */
 
 // Miscellaneous global variables.
 
-static char fname1[65];
-static char fname2[65];
+static char fname1[260];
+static char fname2[260];
 
 
 // MONITOR - handle MDS monitor calls
@@ -739,7 +743,7 @@ void iload(LBLK *pblk)
     // convert the filename
     cvtfname(pblk->l_file,fname1,1);
 
-    if (tracesys)
+    if (tracesys || traceload)
 	printf ("LOAD: file=%s, bias=%x, switch=%x, enad=%x, statptr=%x\n",
 		fname1, bias, mode, enad, stat);
 
@@ -753,8 +757,13 @@ void iload(LBLK *pblk)
     // read (f, buf, n) -> fread (buf, 1, n, f)
     for (done = FALSE; !done; )
     {
-	fread (&type, sizeof (type), 1, f);
-	fread (&count, sizeof (count), 1, f);
+	if (fread (&type, sizeof (type), 1, f) != 1 ||
+	    fread (&count, sizeof (count), 1, f) != 1)
+	{
+	    setstat (stat, 16);
+	    done = TRUE;
+	    break;
+	}
 	switch (type)
 	{
 	    case 0x02:
@@ -765,24 +774,56 @@ void iload(LBLK *pblk)
 	    case 0x16:
 	    case 0x18:
 	    case 0x20:	    /* ignored record */
+	        if (traceload)
+		{
+		    printf ("iload: ignoring record type 0x%x, count 0x%x\n",
+		            type, count);
+		}
 		fseek (f, (long)count, SEEK_CUR);
 		break;
 	    case 0x06:	    /* content record */
-		fread (&type, sizeof(type), 1, f);	// ignore this byte
-		fread (&dataptr, sizeof(dataptr), 1, f);
-		if (dataptr < 0x3000)
+		if (fread (&type, sizeof(type), 1, f) != 1 ||		// ignore type byte
+		    fread (&dataptr, sizeof(dataptr), 1, f) != 1)	// load address
+		{
+		    setstat (stat, 16);
+		    done = TRUE;
+		    break;
+		}
+		if (traceload)
+		{
+		    printf ("iload: storing %d bytes at 0x%x\n", count, dataptr + bias);
+		}
+		if (dataptr + bias < 0x3000)
+		{
+#if 0
+		    setstat(stat, 16);
+		    done = TRUE;
+		    break;
+#else
+		    printf ("iload: warning: storing %d bytes at 0x%x\n", count, dataptr + bias);
+#endif
+		}
+		if (fread(&mem8080[dataptr+bias], 1, count-4, f) != count - 4)
 		{
 		    setstat(stat, 16);
 		    done = TRUE;
 		    break;
 		}
-		fread(&mem8080[dataptr+bias], 1, count-4, f);
-		fread(&type, sizeof(type), 1, f); // skip checksum - should check */
+		if (fread(&type, sizeof(type), 1, f) != 1)	// skip checksum - should check */
+		{
+		    setstat(stat, 16);
+		    done = TRUE;
+		    break;
+		}
 		break;
 	    case 0x04:	    /* end record */
 		fread(&type, sizeof(type), 1, f);	// skip module type
 		fread(&type, sizeof(type), 1, f);	// skip the zero byte
 		fread(&entrypt, sizeof(entrypt), 1, f);	// read the entry point
+		if (traceload)
+		{
+		    printf ("iload: entry point = 0x%x\n", entrypt);
+		}
 		done = TRUE;
 		if (mode == 0)		/* don't return status if chaining */
 		    setword (stat, 0);
@@ -1077,6 +1118,7 @@ static void usage ()
     printf ("usage: isis [-t] [-s] [-d] program args...\n");
     printf (" -t  enable instruction tracing\n");
     printf (" -s  enable ISIS-II system call tracing\n");
+    printf (" -l  enable tracing of program loads\n");
     printf (" -d  run 8080 debugger\n");
     exit (1);
 }
@@ -1118,6 +1160,8 @@ void initisis (int argc, char *argv[])
 	    tracesys = 1;
 	else if (strcmp (arg, "-d") == 0)
 	    debugger = 1;
+	else if (strcmp (arg, "-l") == 0)
+	    traceload = 1;
 	else if (strcmp (arg, "--help") == 0)
 	    usage ();
 	else
