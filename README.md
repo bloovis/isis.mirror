@@ -6,30 +6,20 @@ system that ran on 8-inch floppies.  It included an assembler, a compiler
 for PL/M (a high-level programming language streamlined for microprocessors),
 a linker, and associated tools.
 
-It's unlikely this ancient software would be useful now.
-The 8080 processor, though very popular in the 70s, quickly gave
-way to the 16-bit 8086, which evolved into the CPUs that power most PCs
-nowadays.  It's likely that very few embedded systems in the world
-today use the 8080, or its very similar competitor, the Zilog Z80.
-
-But we can still see the 8080 influence even in these modern
-processors, for good or ill.  And I like the idea of keeping around
-old software just to remind myself of the good old days, when
-chips and systems were so simple that one person could easily
-comprehend them in their entirety.
-
-So I've written this simulator for ISIS-II, which includes an 8080
+To make it possible to run ISIS-based tools (mainly compilers and related
+tools), I've written this simulator for ISIS-II, which includes an 8080
 simulator written in assembly language for speed.  It currently builds
-and runs on either 32-bit or 64-bit Linux.  It was originally written
-back in the 80s for DOS, but I haven't done the necessary work to
-update it to work on Win32.
+and runs on either 32-bit or 64-bit Linux.
 
-The package includes free copies of Intel's linker, assembler, and PL/M
-compiler that I obtained from Intel's web site.  After you unpack
-the tar file, run `make` to build the simulator.
-The resulting executable is in `linux/isis`.
+I originally wrote the simulator in the early 80s for MS-DOS.  See the
+`dos` subdirectory for that older version of the simulator, including a
+makefile that builds the simulator using Turbo C.
 
-Then run `make test` to make sure that everything is
+This repository also includes free copies of Intel's linker, assembler, and PL/M
+compiler that I obtained from Intel's web site.
+
+On Linux, run `make` to build the simulator.  The resulting executable
+is in `linux/isis`.  Then run `make test` to make sure that everything is
 working; this will compile a simple PL/M program and run it on the
 simulator.  You must be using bash as your shell for this to work.
 
