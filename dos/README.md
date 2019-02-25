@@ -5,11 +5,12 @@ of the ISIS-II simulator.  This source code is much older than
 the Linux version found in the parent directory.
 
 The simulator is compiled with Borland Turbo C version 2 and Turbo
-Assembler version 2, but it does not use any Borland startup or
-library code.  Instead, it uses its own startup code and DOS interface
-library.  This ensures that the combined code and data of executable
-does not exceed 0x3000 bytes in length.  That restriction is necessary
-because 8080 code is loaded into memory above that address.
+Assembler version 2, but it does not use any Borland startup code or
+library code (except for two shift functions).  Instead, it uses its
+own startup code and DOS interface library.  This ensures that the
+combined code and data of executable does not exceed 0x3000 bytes in
+length.  That restriction is necessary because 8080 code is loaded
+into memory above that address.
 
 To build the simulator, ensure that Turbo C (tcc) and Turbo Assembler (tasm)
 are installed and located in the PATH environment variable.  Then build
