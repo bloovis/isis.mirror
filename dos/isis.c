@@ -2,7 +2,7 @@
 
 #include "portab.h"
 
-#define TRACE TRUE	    /* TRUE if all ISIS-II calls are to be traced */
+#define TRACE FALSE	    /* TRUE if all ISIS-II calls are to be traced */
 
 
 /***********************************************************************
@@ -268,72 +268,6 @@ monitor()
 }
 
 /***********************************************************************
-* ISIS - handle RETEM (return from 8080 emulation) (ISIS or MONITOR call)
-*
-* This routine is called from run80 or sim80 after the 8080 program
-* returns from emulation with a RETEM.  This happens when the
-* the RETEM instruction at 38H is executed as a result of a RST 7
-* instruction.  There are RST 7 instructions at the ISIS entry
-* point at 40H, as well as all MDS monitor entry points at F8xxH.
-***********************************************************************/
-
-isis()
-{
-    BYTE opcode;
-
-    if ((WORD)savepc != 0x41)			/* not an ISIS-II call?	*/
-    {
-	monitor();			/* must be an MDS monitor call */
-	return;
-    }
-    switch(savebc & 0xff)   /* it's an ISIS-II trap - do the right thing */
-    {
-	case 0:
-	    iopen((OBLK *)savede);	/* OPEN call */
-	    break;
-	case 1:
-	    iclose((CBLK *)savede);	/* CLOSE call */
-	    break;
-	case 2:
-	    idelete((DBLK *)savede);	/* DELETE call */
-	    break;
-	case 3:
-	    iread((RBLK *)savede);	/* READ call */
-	    break;
-	case 4:
-	    iwrite((WBLK *)savede);	/* WRITE call */
-	    break;
-	case 5:
-	    iseek((SBLK *)savede);	/* SEEK call */
-	    break;
-	case 6:
-	    iload((LBLK *)savede);	/* LOAD call */
-	    break;
-	case 7:
-	    irename((RNBLK *)savede);	/* RENAME call */
-	    break;
-	case 9:
-	    cleanup();
-	    break;
-	case 11:
-	    irescan((RSBLK *)savede);	/* RESCAN call */
-	    break;
-	case 12:		/* ERROR call */
-	    ierror((EBLK *)savede);
-	    break;
-	case 14:		/* SPATH call */
-	    ispath((SPBLK *)savede);
-	    break;
-	default:
-	    print("\r\nIllegal ISIS-II function call ");
-	    phexw(savebc);
-	    print("\r\n");
-	    break;
-    }
-}
-
-
-/***********************************************************************
 *  CVTFNAME - convert an ISIS-II filename to a DOS ASCIIZ filename
 ***********************************************************************/
 
@@ -439,105 +373,20 @@ cleanup()
 }
 
 /***********************************************************************
-*  INITISIS - initialize the first two FCBs for :CI: and :CO:,
-*     clear the rest of the FCBs
+*  SETSTAT - set ISIS-II function call return status, print a message
+*    if tracing is enabled.
 ***********************************************************************/
 
-initisis()
+void setstat(stat,val)
+WORD *stat;
+WORD val;
 {
-    FCB *f;
-    WORD aft;
-    LBLK pblk;
-    WORD stat;
-    WORD count;
-    BYTE *buf;
-    BYTE *env;
-    WORD comport;
-
-/* Figures out whether COM1 or COM2 is to be used as the alternate
- * console device by looking at the environment variable :I1: or
- * :O1:.  Call sioinit() with the proper port number (0 for com1,
- * 1 for com2) as parameter.  Also set up a control-C handler
- * to clean up if control-C is hit.
- */
-    comport = 0;			/* default com port is COM1: */
-    if ((env = getenv(":I1:")) == 0)
-	env  = getenv(":O1:");
-    if (env != 0)
-    {
-	if (strcmp(env,"COM1:") == 0 || strcmp(env,"com1:") == 0)
-	    comport = 0;
-	else
-	    if (strcmp(env,"COM2:") == 0 || strcmp(env,"com2:") == 0)
-		comport = 1;
-    }
-    sioinit(comport);
-    ctrlc(cleanup);
-
-    /* Look at the enviroment variable O1DELAY to find out how many
-     * milliseconds to delay after each character.  If not defined,
-     * use zero.
-     */
-    o1delay = 0;
-    if ((env = getenv("O1DELAY")) != 0)
-    {
-	for (; *env; env++)
-	    o1delay = (o1delay * 10) + *env - '0';
-    }
-
-/* set up FCB 0 for console output file */
-
-    f = &fcbs[0];	/* pointer to FCB for :CO: */
-    f->f_fd = 1;	/* DOS file handle = 1 */
-    f->f_access = 2;	/* write only */
-    f->f_led = 0;	/* not line-edited */
-
-/* set up FCB 1 for console input file */
-
-    f = &fcbs[1];	/* point to FCB for :CO: */
-    f->f_fd = 0;	/* DOS file handle = 0 */
-    f->f_access = 1;	/* read only */
-    f->f_led = 0xff00;	/* it's line-edited */
-    count = psp[128];	/* number of bytes in command tail */
-    buf = &psp[129];	/* address of command tail */
-    while (count && (*buf == ' '))    /* skip leading spaces */
-    {
-	count--;
-	buf++;
-    }
-    movb(buf,f->f_lbuf,count);
-    movb("\r\n",&f->f_lbuf[count],2);
-    f->f_count = count + 2;
-    f->f_index = 0;
-
-/* mark remaining FCBs as unused */
-
-    for (aft = 2; aft < 10; aft++)
-	fcbs[aft].f_fd = -1;	/* mark it as unused */
-
-/* skip past leading spaces on command line to find program name */
-
-    while (f->f_lbuf[f->f_index] == ' ')
-	f->f_index++;
-    pblk.l_file = &f->f_lbuf[f->f_index];
-
-/* skip read pointer past filename to command to tail */
-
-    while (f->f_lbuf[f->f_index] != ' ' && f->f_lbuf[f->f_index] != '\r')
-	f->f_index++;
-
-/* load program specified on command line */
-
-    pblk.l_bias = 0;
-    pblk.l_switch = 0;
-    pblk.l_enad = &savepc;
-    pblk.l_stat = &stat;
-    iload(&pblk);
-    if (stat != 0)
-    {
-	print("\r\nUnable to load program\r\n");
-	cleanup();
-    }
+    *stat = val;
+#if TRACE
+    print(" status=");
+    phexw(val);
+    print("\r\n");
+#endif
 }
 
 
@@ -559,28 +408,10 @@ WORD *stat;
 
 
 /***********************************************************************
-*  SETSTAT - set ISIS-II function call return status, print a message
-*    if tracing is enabled.
-***********************************************************************/
-
-setstat(stat,val)
-WORD *stat;
-WORD val;
-{
-    *stat = val;
-#if TRACE
-    print(" status=");
-    phexw(val);
-    print("\r\n");
-#endif
-}
-
-
-/***********************************************************************
 *  IOPEN - ISIS-II OPEN call
 ***********************************************************************/
 
-iopen(pblk)
+void iopen(pblk)
 OBLK *pblk;
 {
     WORD aft;
@@ -622,7 +453,10 @@ OBLK *pblk;
     for (aft = 2; aft < 10; aft++)
 	if (fcbs[aft].f_fd == -1) break;
     if (aft == 10)	    /* no more FCBs */
-	return (setstat(pblk->o_stat, 3));
+    {
+	setstat(pblk->o_stat, 3);
+	return;
+    }
     f = &fcbs[aft];
 
 /* call DOS to open the file */
@@ -641,14 +475,21 @@ OBLK *pblk;
 		f->f_fd = creat(fname,0);	/* create new file */
 	    break;
 	default:
-	    return (setstat(pblk->o_stat, 33));
+	    setstat(pblk->o_stat, 33);
+	    return;
     }
     if (f->f_fd == -1)
     {
 	if (pblk->o_access > 1)
-	    return(setstat(pblk->o_stat, 14));	   /* unable to open for write */
+	{
+	    setstat(pblk->o_stat, 14);	   /* unable to open for write */
+	    return;
+	}
 	else
-	    return (setstat(pblk->o_stat, 13));    /* unable to open for read */
+	{
+	    setstat(pblk->o_stat, 13);    /* unable to open for read */
+	    return;
+	}
     }
 
 /* set up other fields in FCB */
@@ -670,7 +511,7 @@ OBLK *pblk;
 * IREAD - ISIS-II READ call
 ***********************************************************************/
 
-iread(pblk)
+void iread(pblk)
 RBLK *pblk;
 {
     FCB *f;
@@ -691,7 +532,10 @@ RBLK *pblk;
 #endif
     if ((f = getfcb(pblk->r_aft,pblk->r_stat)) == 0) return;
     if (f->f_access != 1 && f->f_access != 3)
-	return (setstat(pblk->r_stat, 8));    /* attempt to read file open for output */
+    {
+	setstat(pblk->r_stat, 8);    /* attempt to read file open for output */
+	return;
+    }
     if (f->f_led)		 /* line-edited file? */
     {
 	if (f->f_index == f->f_count)	/* line buffer empty */
@@ -722,7 +566,10 @@ RBLK *pblk;
     {
 	nchars = read(f->f_fd,pblk->r_buf,pblk->r_cnt);
 	if (nchars == -1)   /* disk error */
-	    return(setstat(pblk->r_stat, 24));	   /* ISIS disk error code */
+	{
+	    setstat(pblk->r_stat, 24);	   /* ISIS disk error code */
+	    return;
+	}
 	else *pblk->r_stat = 0;
     }
 #if TRACE
@@ -738,7 +585,7 @@ RBLK *pblk;
 * IWRITE - ISIS-II WRITE call
 ***********************************************************************/
 
-iwrite(pblk)
+void iwrite(pblk)
 WBLK *pblk;
 {
     FCB *f;
@@ -756,7 +603,10 @@ WBLK *pblk;
 #endif
     if ((f = getfcb(pblk->w_aft,pblk->w_stat)) == 0) return;
     if (f->f_access != 2 && f->f_access != 3)
-	return(setstat(pblk->w_stat, 6));	/* attempt to write file open for input */
+    {
+	setstat(pblk->w_stat, 6);	/* attempt to write file open for input */
+	return;
+    }
     nchars = write(f->f_fd,pblk->w_buf,pblk->w_cnt);
 #if TRACE
     print(" actual=");
@@ -774,7 +624,7 @@ WBLK *pblk;
 * ICLOSE - ISIS-II CLOSE call
 ***********************************************************************/
 
-iclose(pblk)
+void iclose(pblk)
 CBLK *pblk;
 {
     FCB *f;
@@ -795,7 +645,10 @@ CBLK *pblk;
 	return;
     }
     if (close(f->f_fd) == -1)
-	return(setstat(pblk->c_stat, 24));
+    {
+	setstat(pblk->c_stat, 24);
+	return;
+    }
     else
     {
 #if TRACE
@@ -811,7 +664,7 @@ CBLK *pblk;
 * IDELETE - ISIS-II DELETE call
 ***********************************************************************/
 
-idelete(pblk)
+void idelete(pblk)
 DBLK *pblk;
 {
     cvtfname(pblk->d_file,fname1,1);
@@ -822,7 +675,10 @@ DBLK *pblk;
     phexw(pblk->d_stat);
 #endif
     if (unlink(skipdrv(fname1)) == -1)
-	return(setstat(pblk->d_stat, 13));
+    {
+	setstat(pblk->d_stat, 13);
+	return;
+    }
     else *pblk->d_stat = 0;
 #if TRACE
     print("\r\n");
@@ -834,7 +690,7 @@ DBLK *pblk;
 * IRENAME - ISIS-II RENAME call
 ***********************************************************************/
 
-irename(pblk)
+void irename(pblk)
 RNBLK *pblk;
 {
     cvtfname(pblk->rn_file1,fname1,1);	/* convert old filename */
@@ -848,7 +704,10 @@ RNBLK *pblk;
     phexw(pblk->rn_stat);
 #endif
     if (rename(fname1,fname2) == -1)
-	return (setstat(pblk->rn_stat, 13));
+    {
+	setstat(pblk->rn_stat, 13);
+	return;
+    }
     else *pblk->rn_stat = 0;
 #if TRACE
     print("\r\n");
@@ -860,7 +719,7 @@ RNBLK *pblk;
 * ISEEK - ISIS-II SEEK call
 ***********************************************************************/
 
-iseek(pblk)
+void iseek(pblk)
 SBLK *pblk;
 {
     FCB *f;
@@ -882,7 +741,10 @@ SBLK *pblk;
 #endif
     if ((f = getfcb(pblk->s_aft,pblk->s_stat)) == 0) return;
     if (pblk->s_aft < 2)    /* ignore attempts to close console files */
-	return(setstat(pblk->s_stat, 19)); /* attempt to seek on non-disk file */
+    {
+	setstat(pblk->s_stat, 19); /* attempt to seek on non-disk file */
+	return;
+    }
 
 /* compute DOS offset from ISIS-II offset */
 
@@ -912,7 +774,7 @@ SBLK *pblk;
 	    mode = 2;
 	    break;
 	default:
-	    return (setstat(pblk->s_stat, 27));   /* incorrect mode parameter */
+	    setstat(pblk->s_stat, 27);   /* incorrect mode parameter */
 	    return;
     }
 #if TRACE
@@ -945,7 +807,7 @@ SBLK *pblk;
 *  IRESCAN - ISIS-II RESCAN call
 ***********************************************************************/
 
-irescan(pblk)
+void irescan(pblk)
 RSBLK *pblk;
 {
     FCB *f;
@@ -958,7 +820,10 @@ RSBLK *pblk;
 #endif
     if ((f = getfcb(pblk->rs_aft,pblk->rs_stat)) == 0) return;
     if (!f->f_led)	/* not line-edited file */
-	return (setstat(pblk->rs_stat, 21));
+    {
+	setstat(pblk->rs_stat, 21);
+	return;
+    }
     f->f_index = 0;
     *pblk->rs_stat = 0;
 #if TRACE
@@ -971,7 +836,7 @@ RSBLK *pblk;
 *  ILOAD - ISIS-II LOAD call
 ***********************************************************************/
 
-iload(pblk)
+void iload(pblk)
 LBLK *pblk;
 {
     WORD fd;		/* file descriptor */
@@ -1009,7 +874,10 @@ LBLK *pblk;
     phexw(stat);
 #endif
     if ((fd = open(skipdrv(fname1),0)) == -1)
-	return (setstat(stat, 13));
+    {
+	setstat(stat, 13);
+	return;
+    }
     for (done = FALSE; !done; )
     {
 	read(fd,&type,1);
@@ -1063,7 +931,8 @@ LBLK *pblk;
 	    savesp = &stak;
 	    break;
 	default:
-	    return (setstat(stat, 33));     /* illegal system call parameter */
+	    setstat(stat, 33);     /* illegal system call parameter */
+	    return;
     }
 #if TRACE
     print(" entry=");
@@ -1079,7 +948,7 @@ LBLK *pblk;
 *  IERROR - ISIS-II ERROR call
 ***********************************************************************/
 
-ierror(pblk)
+void ierror(pblk)
 EBLK *pblk;
 {
     print("\r\nISIS-II Error ");
@@ -1138,7 +1007,7 @@ EBLK *pblk;
 *  ISPATH - ISIS-II SPATH call
 ***********************************************************************/
 
-ispath(pblk)
+void ispath(pblk)
 SPBLK *pblk;
 {
     BYTE *buf;
@@ -1248,3 +1117,173 @@ BYTE *d,*s;
 {
     strcpy(d+strlen(d),s);
 }
+
+
+
+/***********************************************************************
+* ISIS - handle RETEM (return from 8080 emulation) (ISIS or MONITOR call)
+*
+* This routine is called from run80 or sim80 after the 8080 program
+* returns from emulation with a RETEM.  This happens when the
+* the RETEM instruction at 38H is executed as a result of a RST 7
+* instruction.  There are RST 7 instructions at the ISIS entry
+* point at 40H, as well as all MDS monitor entry points at F8xxH.
+***********************************************************************/
+
+void isis()
+{
+    BYTE opcode;
+
+    if ((WORD)savepc != 0x41)			/* not an ISIS-II call?	*/
+    {
+	monitor();			/* must be an MDS monitor call */
+	return;
+    }
+    switch(savebc & 0xff)   /* it's an ISIS-II trap - do the right thing */
+    {
+	case 0:
+	    iopen((OBLK *)savede);	/* OPEN call */
+	    break;
+	case 1:
+	    iclose((CBLK *)savede);	/* CLOSE call */
+	    break;
+	case 2:
+	    idelete((DBLK *)savede);	/* DELETE call */
+	    break;
+	case 3:
+	    iread((RBLK *)savede);	/* READ call */
+	    break;
+	case 4:
+	    iwrite((WBLK *)savede);	/* WRITE call */
+	    break;
+	case 5:
+	    iseek((SBLK *)savede);	/* SEEK call */
+	    break;
+	case 6:
+	    iload((LBLK *)savede);	/* LOAD call */
+	    break;
+	case 7:
+	    irename((RNBLK *)savede);	/* RENAME call */
+	    break;
+	case 9:
+	    cleanup();
+	    break;
+	case 11:
+	    irescan((RSBLK *)savede);	/* RESCAN call */
+	    break;
+	case 12:		/* ERROR call */
+	    ierror((EBLK *)savede);
+	    break;
+	case 14:		/* SPATH call */
+	    ispath((SPBLK *)savede);
+	    break;
+	default:
+	    print("\r\nIllegal ISIS-II function call ");
+	    phexw(savebc);
+	    print("\r\n");
+	    break;
+    }
+}
+
+/***********************************************************************
+*  INITISIS - initialize the first two FCBs for :CI: and :CO:,
+*     clear the rest of the FCBs
+***********************************************************************/
+
+initisis()
+{
+    FCB *f;
+    WORD aft;
+    LBLK pblk;
+    WORD stat;
+    WORD count;
+    BYTE *buf;
+    BYTE *env;
+    WORD comport;
+
+/* Figures out whether COM1 or COM2 is to be used as the alternate
+ * console device by looking at the environment variable :I1: or
+ * :O1:.  Call sioinit() with the proper port number (0 for com1,
+ * 1 for com2) as parameter.  Also set up a control-C handler
+ * to clean up if control-C is hit.
+ */
+    comport = 0;			/* default com port is COM1: */
+    if ((env = getenv(":I1:")) == 0)
+	env  = getenv(":O1:");
+    if (env != 0)
+    {
+	if (strcmp(env,"COM1:") == 0 || strcmp(env,"com1:") == 0)
+	    comport = 0;
+	else
+	    if (strcmp(env,"COM2:") == 0 || strcmp(env,"com2:") == 0)
+		comport = 1;
+    }
+    sioinit(comport);
+    ctrlc(cleanup);
+
+    /* Look at the enviroment variable O1DELAY to find out how many
+     * milliseconds to delay after each character.  If not defined,
+     * use zero.
+     */
+    o1delay = 0;
+    if ((env = getenv("O1DELAY")) != 0)
+    {
+	for (; *env; env++)
+	    o1delay = (o1delay * 10) + *env - '0';
+    }
+
+/* set up FCB 0 for console output file */
+
+    f = &fcbs[0];	/* pointer to FCB for :CO: */
+    f->f_fd = 1;	/* DOS file handle = 1 */
+    f->f_access = 2;	/* write only */
+    f->f_led = 0;	/* not line-edited */
+
+/* set up FCB 1 for console input file */
+
+    f = &fcbs[1];	/* point to FCB for :CO: */
+    f->f_fd = 0;	/* DOS file handle = 0 */
+    f->f_access = 1;	/* read only */
+    f->f_led = 0xff00;	/* it's line-edited */
+    count = psp[128];	/* number of bytes in command tail */
+    buf = &psp[129];	/* address of command tail */
+    while (count && (*buf == ' '))    /* skip leading spaces */
+    {
+	count--;
+	buf++;
+    }
+    movb(buf,f->f_lbuf,count);
+    movb("\r\n",&f->f_lbuf[count],2);
+    f->f_count = count + 2;
+    f->f_index = 0;
+
+/* mark remaining FCBs as unused */
+
+    for (aft = 2; aft < 10; aft++)
+	fcbs[aft].f_fd = -1;	/* mark it as unused */
+
+/* skip past leading spaces on command line to find program name */
+
+    while (f->f_lbuf[f->f_index] == ' ')
+	f->f_index++;
+    pblk.l_file = &f->f_lbuf[f->f_index];
+
+/* skip read pointer past filename to command to tail */
+
+    while (f->f_lbuf[f->f_index] != ' ' && f->f_lbuf[f->f_index] != '\r')
+	f->f_index++;
+
+/* load program specified on command line */
+
+    pblk.l_bias = 0;
+    pblk.l_switch = 0;
+    pblk.l_enad = &savepc;
+    pblk.l_stat = &stat;
+    iload(&pblk);
+    if (stat != 0)
+    {
+	print("\r\nUnable to load program\r\n");
+	cleanup();
+    }
+}
+

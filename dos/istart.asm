@@ -278,8 +278,8 @@ _lseek	proc	near
 	pop	bp
 	ret
 lseekok:
-	mov	bx,ax		; return FPOS in ax:bx for C programs
-	mov	ax,dx
+;	mov	bx,ax		; return FPOS in ax:bx for C programs
+;	mov	ax,dx
 	pop	bp
 	ret
 _lseek	endp
