@@ -1,4 +1,4 @@
-# Makefile for building visis.exe and isis.exe using BCC.
+# Makefile for building isis.exe using Borland Turbo C 2 and Turbo Assembler 2.
 
 # Change TCDIR to point to your Turbo C base directory.
 

@@ -1,3 +1,7 @@
+; This is an older version of the 8080 simulator for Linux that
+; was assembled using nasm.  It runs only in 32-bit mode.
+; See sim80.S for the current version of the 8080 simulator.
+
 ;	title	sim80 - 8080 simulator with ISIS-II front end
 ;	page	66,128
 ;	name	sim80

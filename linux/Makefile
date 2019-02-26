@@ -1,9 +1,12 @@
-# Makefile for building isis on Linux using gcc and nasm
+# Makefile for building isis on Linux using gcc and gas
 
 DEBUG = -g
 
 %.o : ../%.c
 	gcc -c -Wall $(DEBUG) $<
+
+# We used to build the 8080 similator with nasm.
+# Now we build it with the GNU assembler.
 
 #%.o : ../%.asm
 #	nasm -f elf -o $@ $<
@@ -13,14 +16,7 @@ DEBUG = -g
 
 OBJ = isis.o sim80.o trace.o debug.o 
 
-# FIXME: replace sioutil.omovb.o sio.o ctrlc.o
-
 all : isis
-
-# The normal, slow version of ISIS.  It's the same as visis,
-# except that it uses sim80 instead of run80.
-
-# FIXME: replace istart.o
 
 isis : sim80.o $(OBJ) Makefile
 	gcc -o isis $(DEBUG) $(OBJ)
