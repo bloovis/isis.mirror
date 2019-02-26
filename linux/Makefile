@@ -18,7 +18,7 @@ OBJ = isis.o sim80.o trace.o debug.o
 
 all : isis
 
-isis : sim80.o $(OBJ) Makefile
+isis : $(OBJ) Makefile
 	gcc -o isis $(DEBUG) $(OBJ)
 
 clean :
