@@ -21,7 +21,7 @@ compiler that I obtained from Intel's web site.
 On Linux, run `make` to build the simulator.  The resulting executable
 is in `linux/isis`.  Then run `make test` to make sure that everything is
 working; this will compile a simple PL/M program and run it on the
-simulator.  You must be using bash as your shell for this to work.
+simulator.
 
 In order to use the ISIS-II simulator, you must set environment
 variables that map directories to ISIS drive names.

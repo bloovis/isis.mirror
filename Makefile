@@ -6,7 +6,7 @@ build:
 
 .PHONY: test
 test:
-	(cd test && source setup.sh && make)
+	(cd test && . setup.sh && make)
 
 .PHONY: archive
 archive:
