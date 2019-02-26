@@ -1,7 +1,6 @@
-# Makefile to test ISIS-II simulator
-# This assumes that ISIS_F1, ISIS_F2, and ISIS_F3 environment variables
-# have been previously set up by sourcing setup.csh or setup.sh in
-# tcsh or bash, respectively.
+# Makefile to test ISIS-II simulator on DOS/Win32.
+# This assumes that :f1:, :f2:, and :f3: environment variables
+# have been previously set up by setup.bat.
 
 ISIS=..\dos\isis
 
