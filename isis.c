@@ -29,6 +29,14 @@
 
 #include "isis.h"
 
+/* The O_BINARY flag is needed for open on Windows, to prevent
+ * conversion of CRLF sequences to LF.  But it's not needed or
+ * defined on Linux.
+ */
+#ifndef __WIN32__
+#define O_BINARY 0
+#endif
+
 // Single step flag
 
 extern int step;
@@ -401,13 +409,13 @@ void iopen (OBLK *pblk)
     switch (pblk->o_access)
     {
 	case 1: 		    /* open for read */
-	    f->f_fd = open(fname, O_RDONLY);
+	    f->f_fd = open(fname, O_RDONLY|O_BINARY);
 	    break;
 	case 2: 		    /* open for write */
-	    f->f_fd = creat(fname, S_IRUSR|S_IWUSR);
+	    f->f_fd = open(fname, O_WRONLY|O_CREAT|O_BINARY, S_IRUSR|S_IWUSR);
 	    break;
 	case 3: 		    /* open for update */
-	    f->f_fd = open(fname, O_RDWR|O_CREAT, S_IRUSR|S_IWUSR);
+	    f->f_fd = open(fname, O_RDWR|O_CREAT|O_BINARY, S_IRUSR|S_IWUSR);
 	    break;
 	default:
 	    setstat(pblk->o_stat, 33);

@@ -69,10 +69,26 @@
 
 	.data
 
+# The public names with underscore prefixes are needed for MinGW.
+
+#if defined(__WIN32__)
+#define mem8080 _mem8080
+#define trace8080 _trace8080
+#define go8080 _go8080
+#define savebc _savebc
+#define savede _savede
+#define savehl _savehl
+#define savesp _savesp
+#define savepc _savepc
+#define savepsw _savepsw
+#define trace _trace
+#define isis _isis
+#endif
+
 	.globl	mem8080		# pointer to base of 8080 memory block, always
 				# guaranteed to have zero in its low 16 bits
 
-# Register values passed to ISIS-II from simulator
+# Register values passed to ISIS-II from simulator.
 
 	.globl	savebc,savede,savehl,savesp,savepc,savepsw
 
