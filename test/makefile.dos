@@ -25,4 +25,8 @@ testasm.obj : testasm.asm
 	$(ISIS) :f3:asm80 testasm.asm
 
 clean :
-	rm -f *.obj *.lnk *.hex *.lst chug
+	del *.obj
+	del *.lnk
+	del *.hex
+	del *.lst
+	del chug

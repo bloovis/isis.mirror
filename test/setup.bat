@@ -1,4 +1,4 @@
-# DOS batch file to set up ISIS drives before running tests.
+rem -- DOS batch file to set up ISIS drives before running tests.
 
 set :f1:=../intel/plm80
 set :f2:=../intel/utils

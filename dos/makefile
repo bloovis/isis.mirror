@@ -20,3 +20,11 @@ all : isis.exe
 
 isis.exe : istart.obj sim80.obj $(COMMONOBJ) makefile
 	tlink istart sim80 $(COMMONLNK),isis,isis,$(TCDIR)\lib\cs.lib $(LINKDEBUG)
+
+clean:
+	del *.obj
+
+test:
+	cd ..\test
+	setup
+	make -fmakefile.dos

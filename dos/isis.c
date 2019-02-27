@@ -1282,7 +1282,7 @@ initisis()
     iload(&pblk);
     if (stat != 0)
     {
-	print("\r\nUnable to load program\r\n");
+	print("\r\Missing or non-existent ISIS-II program specified\r\n");
 	cleanup();
     }
 }
