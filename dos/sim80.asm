@@ -274,8 +274,8 @@ _go8080	endp
 ;	BUMP1F	bump pc by 1, then do a FETCHF
 ;	BUMP2F	bump pc by 2, then do a FETCHF
 ;	FETCH	discard flags, then fetch instruction
-;	BUMP1	bump pc by 1, then do a FETCHF
-;	BUMP2	bump pc by 2, then do a FETCHF
+;	BUMP1	bump pc by 1, then do a FETCH
+;	BUMP2	bump pc by 2, then do a FETCH
 ; The fetch operation destroys the flags (they're still in ah though),
 ; so any instruction that needs the flags back must do a "getf" macro call.
 
