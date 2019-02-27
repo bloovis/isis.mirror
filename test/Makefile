@@ -1,12 +1,14 @@
-# Makefile to test ISIS-II simulator
+# Makefile to test ISIS-II simulator on Linux, or Windows using MinGW.
 # This assumes that ISIS_F1, ISIS_F2, and ISIS_F3 environment variables
 # have been previously set up by sourcing setup.csh or setup.sh in
 # tcsh or bash, respectively.
 
-ISIS=../linux/isis
+ISIS=../gnu/isis
 
+.PHONY: all
 all : run testasm.hex
 
+.PHONY: run
 run : chug
 	$(ISIS) chug
 
@@ -25,5 +27,6 @@ testasm.hex : testasm.obj
 testasm.obj : testasm.asm
 	$(ISIS) :f3:asm80 testasm.asm
 
+.PHONY: clean
 clean :
 	rm -f *.obj *.lnk *.hex *.lst chug

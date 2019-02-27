@@ -26,3 +26,27 @@ these commands:
 
 This will build and run a small PL/M-80 program, and assemble and output in hex
 a small 8080 assembly language file.
+
+In order to use the ISIS-II simulator on Linux, or on Windows under
+MinGW, you must set environment variables that map directories to ISIS
+drive names.  Take a look at `test/setup.bat` for an
+example.
+
+if you want to run the PL/M-80 compiler, which
+is located in the `intel/plm80` directory, you would use this
+command at the shell prompt to tell the simulator that ISIS-II
+drive `:F1:` points to that directory:
+
+    set :f1:=intel/plm80
+
+(Note that the environment variable uses upper-case letters.  Note also
+that forward slashes are used.  It is a little known fact that the DOS
+file system APIs accept forward slashes as well as backslashes as
+directory separators.  However, the command shell, cmd.exe, doesn't like
+forward slashes; it interprets them as option characters.)
+
+Then to run the PL/M-80 compiler, you could use this command:
+
+    dos\isis :f1:plm80 <arguments>
+
+(Note that the drive letter and other arguments use lower-case letters.)
