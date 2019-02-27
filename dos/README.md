@@ -2,7 +2,7 @@
 
 This directory contains the source for the MS-DOS-hosted version
 of the ISIS-II simulator.  This source code is much older than
-the Linux version found in the parent directory.
+the Linux version found in the `gnu` directory.
 
 The simulator is compiled with Borland Turbo C version 2 and Turbo
 Assembler version 2, but it does not use any Borland startup code or
@@ -27,8 +27,8 @@ these commands:
 This will build and run a small PL/M-80 program, and assemble and output in hex
 a small 8080 assembly language file.
 
-In order to use the ISIS-II simulator on Linux, or on Windows under
-MinGW, you must set environment variables that map directories to ISIS
+In order to use the ISIS-II simulator on MS-DOS,
+you must set environment variables that map directories to ISIS
 drive names.  Take a look at `test/setup.bat` for an
 example.
 
