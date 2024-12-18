@@ -372,6 +372,7 @@ halt:
 	.globl	go8080
 
 go8080:
+	sub	$8, RSP			# align stack on 16-byte boundary (needed for libc)
 	mov	RSP,CSTACK		# save C stack pointer
 	mov	MEM8080,RAX		# get base of 8080 memory
 	mov	RAX,RCX			# copy it to all 8080 registers
