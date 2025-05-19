@@ -4,7 +4,8 @@ ISIS-II was an operating system developed by Intel in the mid-70s for
 their MDS (Microprocessor Development System).  The MDS was an 8080-based
 system that ran on 8-inch floppies.  It included an assembler, a compiler
 for PL/M (a high-level programming language streamlined for microprocessors),
-a linker, and associated tools.
+a linker, and associated tools.  (Read a history of the ISIS-II
+project by its designer, Ken Burgett, [here](https://rogerarrick.com/kenburgett/)).
 
 To make it possible to run ISIS-based tools (mainly compilers and related
 tools), I've written this simulator for ISIS-II, which includes an 8080
