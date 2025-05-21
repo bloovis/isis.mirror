@@ -142,6 +142,28 @@ void dump_inter_seg_refs(const unsigned char *buf, int len)
   }
 }
 
+void dump_pubdecs(const unsigned char *buf, int len)
+{
+  int i;
+
+  printf("Public Declarations\n");
+  printf("  Segment %s\n", seg_name(buf[0]));
+  i = 1;
+  while (i < len) {
+    printf("    Offset: 0x%x, Name: ", get_word(&buf[i]));
+    i += 2;
+    i += print_name(&buf[i]) + 1;	/* skip reserved byte after name */
+    printf("\n");
+  }
+}
+
+void dump_modend(const unsigned char *buf, int len)
+{
+  printf("Module End\n");
+  printf("  Type: %smain program\n", buf[0] == 0 ? "not a" : "");
+  printf("  Segment %s\n", seg_name(buf[1]));
+  printf("  Offset  0x%x\n", get_word(&buf[2]));
+}
 
 void dump_unknown(int rectype, const unsigned char *buf, int len)
 {
@@ -235,9 +257,11 @@ void dump(FILE *f)
       case 0x24:
 	dump_inter_seg_refs(buf, len);
 	break;
+      case 0x16:
+	dump_pubdecs(buf, len);
+	break;
       case 0x04:
-	printf("Module END\n");
-	dump_buf(buf, len, "  ");
+	dump_modend(buf, len);
 	break;
       case 0x0e:
 	printf("EOF\n");
