@@ -17,14 +17,17 @@ DEBUG = -g
 OBJ = isis.o sim80.o trace.o debug.o 
 
 .PHONY: all
-all : isis
+all : isis omfdump
 
 isis : $(OBJ) Makefile
 	gcc -o isis $(DEBUG) $(OBJ)
 
+omfdump : omfdump.o
+	gcc -o omfdump omfdump.c
+
 .PHONY: clean
 clean :
-	rm -f $(OBJ) isis
+	rm -f $(OBJ) isis omfdump.o omfdump
 
 .PHONY: test
 test:
