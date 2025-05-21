@@ -1,6 +1,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+/* OMF-80 dumper */
+
+/* Print a buffer as hex bytes.
+ */
 void dump_buf(const unsigned char *buf, int len, const char *prefix)
 {
   int i;
@@ -16,6 +20,8 @@ void dump_buf(const unsigned char *buf, int len, const char *prefix)
   }
 }
 
+/* Return a segment id in string form.
+ */
 const char *seg_name(unsigned int segid)
 {
   static char name[40];
@@ -33,7 +39,7 @@ const char *seg_name(unsigned int segid)
   }
 }
 
-/* Print a length-preceded name, and return the length of the name + 1
+/* Print a length-preceded name, and return the length of the name + 1.
  */
 int print_name(const unsigned char *buf)
 {
@@ -41,17 +47,19 @@ int print_name(const unsigned char *buf)
 
   nlen = buf[0] & 0xff;
   for (i = 0; i < nlen; i++)
-    printf("%c", buf[i+1]);
+    putchar(buf[i+1]);
   return nlen + 1;
 }
   
-/* Get the 16-bit word at buf.
+/* Return the little-endian 16-bit word at buf.
  */
 unsigned int get_word(const unsigned char *buf)
 {
   return (buf[1] << 8) + buf[0];
 }
 
+/* Dump a module header record.
+ */
 void dump_modhdr(const unsigned char *buf, int len)
 {
   int i;
@@ -70,6 +78,8 @@ void dump_modhdr(const unsigned char *buf, int len)
   }
 }
 
+/* Dump an external names record.
+ */
 void dump_extnames(const unsigned char *buf, int len)
 {
   int i = 0, index = 0;
@@ -83,6 +93,8 @@ void dump_extnames(const unsigned char *buf, int len)
   }
 }
   
+/* Dump a content record.
+ */
 void dump_content(const unsigned char *buf, int len)
 {
   printf("Content\n");
@@ -93,6 +105,8 @@ void dump_content(const unsigned char *buf, int len)
   dump_buf(&buf[3], len - 3, "    ");
 }
 
+/* Return a low/high/both relocation type in string form.
+ */
 const char *lo_hi_both(unsigned char n)
 {
   switch (n)
@@ -104,6 +118,8 @@ const char *lo_hi_both(unsigned char n)
   }
 }
 
+/* Dump a relocation record.
+ */
 void dump_reloc(const unsigned char *buf, int len)
 {
   int i;
@@ -115,6 +131,8 @@ void dump_reloc(const unsigned char *buf, int len)
     printf("    0x%x\n", get_word(&buf[i]));
 }
 
+/* Dump an external references record.
+ */
 void dump_extrefs(const unsigned char *buf, int len)
 {
   int i;
@@ -128,6 +146,8 @@ void dump_extrefs(const unsigned char *buf, int len)
   }
 }
 
+/* Dump an inter-segment references record.
+ */
 void dump_inter_seg_refs(const unsigned char *buf, int len)
 {
   int i;
@@ -142,6 +162,8 @@ void dump_inter_seg_refs(const unsigned char *buf, int len)
   }
 }
 
+/* Dump a public declarations record.
+ */
 void dump_pubdecs(const unsigned char *buf, int len)
 {
   int i;
@@ -157,6 +179,8 @@ void dump_pubdecs(const unsigned char *buf, int len)
   }
 }
 
+/* Dump a module end record.
+ */
 void dump_modend(const unsigned char *buf, int len)
 {
   printf("Module End\n");
@@ -165,6 +189,8 @@ void dump_modend(const unsigned char *buf, int len)
   printf("  Offset  0x%x\n", get_word(&buf[2]));
 }
 
+/* Dump a library header record.
+ */
 void dump_libhdr(const unsigned char *buf, int len)
 {
   int block, byte, offset;
@@ -177,6 +203,8 @@ void dump_libhdr(const unsigned char *buf, int len)
   printf("  Offset of Library Module Names Record: 0x%x\n", offset);
 }
 
+/* Dump a library module names record.
+ */
 void dump_modnames(const unsigned char *buf, int len)
 {
   int i = 0;
@@ -191,6 +219,8 @@ void dump_modnames(const unsigned char *buf, int len)
   }
 }
 
+/* Dump a library module locations record.
+ */
 void dump_modlocs(const unsigned char *buf, int len)
 {
   int i = 0;
@@ -208,6 +238,8 @@ void dump_modlocs(const unsigned char *buf, int len)
   }
 }
 
+/* Dump a library dictionary record.
+ */
 void dump_libdict(const unsigned char *buf, int len)
 {
   int i = 0;
@@ -226,12 +258,16 @@ void dump_libdict(const unsigned char *buf, int len)
   }
 }
 
+/* Dump an unknown record.
+ */
 void dump_unknown(int rectype, const unsigned char *buf, int len)
 {
   printf("Record type 0x%x, data length 0x%x\n", rectype, len);
   dump_buf(buf, len, "  ");
 }
 
+/* Dump a single file.
+ */
 void dump(FILE *f)
 {
   int offset = 0;
@@ -356,6 +392,10 @@ int main(int argc, char *argv[])
   int i;
   FILE *f;
 
+  if (argc == 1) {
+    puts("usage: omdump file...");
+    return 1;
+  }
   for (i = 1; i < argc; i++) {
     const char *filename = argv[i];
     f = fopen(filename, "r");
