@@ -48,3 +48,9 @@ Then to run the PL/M-80 compiler, you could use this command:
     gnu/isis :f1:plm80 <arguments>
 
 (Note that the drive letter and other arguments use lower-case letters.)
+
+## OMF dumper
+
+This repository also includes a simple program, `omfdump`, that dumps OMF files
+(.obj) and libraries (.lib).  It will be built along with `isis` when
+you run `make` in the `gnu` directory.
