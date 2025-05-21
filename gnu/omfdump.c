@@ -160,9 +160,70 @@ void dump_pubdecs(const unsigned char *buf, int len)
 void dump_modend(const unsigned char *buf, int len)
 {
   printf("Module End\n");
-  printf("  Type: %smain program\n", buf[0] == 0 ? "not a" : "");
+  printf("  Type: %smain program\n", buf[0] == 0 ? "not a " : "");
   printf("  Segment %s\n", seg_name(buf[1]));
   printf("  Offset  0x%x\n", get_word(&buf[2]));
+}
+
+void dump_libhdr(const unsigned char *buf, int len)
+{
+  int block, byte, offset;
+
+  printf("Library Header\n");
+  printf("  Module count: %d\n", get_word(&buf[0]));
+  block = get_word(&buf[2]);
+  byte = get_word(&buf[4]);
+  offset = block * 128 + byte;
+  printf("  Offset of Library Module Names Record: 0x%x\n", offset);
+}
+
+void dump_modnames(const unsigned char *buf, int len)
+{
+  int i = 0;
+  int index = 0;
+
+  printf("Library Module Names\n");
+  while (i < len) {
+    printf("  [%d] ", index);
+    i += print_name(&buf[i]);
+    printf("\n");
+    index++;
+  }
+}
+
+void dump_modlocs(const unsigned char *buf, int len)
+{
+  int i = 0;
+  int index = 0;
+  int block, byte, offset;
+
+  printf("Library Module Locations\n");
+  while (i < len) {
+    block = get_word(&buf[i]);
+    byte = get_word(&buf[i+2]);
+    offset = block * 128 + byte;
+    printf("  [%d] offset 0x%x\n", index, offset);
+    i += 4;
+    index++;
+  }
+}
+
+void dump_libdict(const unsigned char *buf, int len)
+{
+  int i = 0;
+  int index = 0;
+
+  printf("Library Dictionary\n");
+  while (i < len) {
+    printf("  Module %d:\n", index);
+    while (buf[i] != 0) {
+      printf("    ");
+      i += print_name(&buf[i]);
+      printf("\n");
+    }
+    i++;
+    index++;
+  }
 }
 
 void dump_unknown(int rectype, const unsigned char *buf, int len)
@@ -173,6 +234,8 @@ void dump_unknown(int rectype, const unsigned char *buf, int len)
 
 void dump(FILE *f)
 {
+  int offset = 0;
+
   while (1) {
     int rectype, reclen, byte, nread, len;
     unsigned char *buf = NULL;
@@ -238,6 +301,7 @@ void dump(FILE *f)
       return;
     }
 
+    printf("[%04x] ", offset);
     switch (rectype) {
       case 0x02:
 	dump_modhdr(buf, len);
@@ -266,12 +330,24 @@ void dump(FILE *f)
       case 0x0e:
 	printf("EOF\n");
 	return;
+      case 0x2c:
+	dump_libhdr(buf, len);
+	break;
+      case 0x28:
+	dump_modnames(buf, len);
+	break;
+      case 0x26:
+	dump_modlocs(buf, len);
+	break;
+      case 0x2a:
+	dump_libdict(buf, len);
+	break;
       default:
         dump_unknown(rectype, buf, len);
 	break;
-      }
-      
+    }
     printf("\n");
+    offset += reclen + 3;
   }
 }
 
