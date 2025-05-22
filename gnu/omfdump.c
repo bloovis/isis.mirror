@@ -1,24 +1,40 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 /* OMF-80 dumper */
 
+/* External functions.
+ */
 extern void disasm(const char *prefix, int offset, const unsigned char *buf, int len);
 
-/* Print a buffer as hex bytes.
+/* Global variables.
  */
-void dump_buf(const char *prefix, int offset, const unsigned char *buf, int len)
+int doption = 0;
+
+/* Print a buffer as hex bytes.  Return a non-zero value if the buffer
+ * appears to contain machine code.
+ */
+int dump_buf(const char *prefix, int offset, const unsigned char *buf, int len)
 {
   int i;
+  int has_code = 0;
 
   for (i = 0; i < len; i++) {
     if ((i & 0xf) == 0)
       printf("%s%04x: ", prefix, i + offset);
     printf("%02x", buf[i]);
+
+    /* Cheap heuristic for determining if the buffer contains code
+     * that we can disassemble.
+     */
+    if (buf[i] >= 0x7f)
+      has_code = 1;
+
+    /* After dumping 16 bytes, or we reached the end of the buffer,
+     * print those bytes again in ASCII format.
+     */
     if ((i & 0xf) == 0x0f || i == len - 1) {
-      /* After dumping 16 bytes, or we reached the end of the buffer,
-       * print those bytes again in ASCII format.
-       */
       int start, end;
 
       start = i & 0xfff0;
@@ -39,6 +55,7 @@ void dump_buf(const char *prefix, int offset, const unsigned char *buf, int len)
 	printf(" ");
     }
   }
+  return has_code;
 }
 
 /* Return a segment id in string form.
@@ -118,7 +135,7 @@ void dump_extnames(const unsigned char *buf, int len)
  */
 void dump_content(const unsigned char *buf, int len)
 {
-  int i, offset;
+  int offset, has_code;
 
   printf("Content\n");
   printf("  Segment %s\n", seg_name(buf[0]));
@@ -126,17 +143,10 @@ void dump_content(const unsigned char *buf, int len)
   printf("  Offset  0x%x\n", offset);
   printf("  Length  0x%x\n", len -3);
   printf("  Data:\n");
-  dump_buf("    ", offset, &buf[3], len - 3);
-
-  /* Cheap heuristic for determining if the buffer contains code
-   * that we can disassemble: if any byte has a value greater than 0x7f.
-   */
-  for (i = 3; i < len; i++) {
-    if ((buf[i] & 0xff) > 0x7f) {
-      printf("\n");
-      disasm("    ", offset, &buf[3], len - 3);
-      break;
-    }
+  has_code = dump_buf("    ", offset, &buf[3], len - 3);
+  if (has_code && doption) {
+    printf("\n");
+    disasm("    ", offset, &buf[3], len - 3);
   }
 }
 
@@ -428,16 +438,22 @@ int main(int argc, char *argv[])
   FILE *f;
 
   if (argc == 1) {
-    puts("usage: omdump file...");
+    puts("usage: omdump [-d] file...");
+    puts("-d : disassemble code contents");
     return 1;
   }
   for (i = 1; i < argc; i++) {
     const char *filename = argv[i];
-    f = fopen(filename, "r");
-    if (f)
-      dump(f);
-    else
-      printf("Unable to open %s\n", filename);
+
+    if (strcmp(filename, "-d") == 0)
+      doption = 1;
+    else {
+      f = fopen(filename, "r");
+      if (f)
+	dump(f);
+      else
+	printf("Unable to open %s\n", filename);
+    }
   }
   return 0;
 }
