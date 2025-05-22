@@ -3,6 +3,8 @@
 
 /* OMF-80 dumper */
 
+extern void disasm(const char *prefix, int offset, const unsigned char *buf, int len);
+
 /* Print a buffer as hex bytes.
  */
 void dump_buf(const unsigned char *buf, int len, const char *prefix)
@@ -97,12 +99,25 @@ void dump_extnames(const unsigned char *buf, int len)
  */
 void dump_content(const unsigned char *buf, int len)
 {
+  int i, offset;
+
   printf("Content\n");
   printf("  Segment %s\n", seg_name(buf[0]));
-  printf("  Offset  0x%x\n", get_word(&buf[1]));
+  offset = get_word(&buf[1]);
+  printf("  Offset  0x%x\n", offset);
   printf("  Length  0x%x\n", len -3);
   printf("  Data:\n");
   dump_buf(&buf[3], len - 3, "    ");
+
+  /* Cheap heuristic for determining if the buffer contains code
+   * that we can disassemble: if any byte has a value greater than 0x7f.
+   */
+  for (i = 3; i < len; i++) {
+    if ((buf[i] & 0xff) > 0x7f) {
+      disasm("    ", offset, &buf[3], len - 3);
+      break;
+    }
+  }
 }
 
 /* Return a low/high/both relocation type in string form.

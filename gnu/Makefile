@@ -22,8 +22,8 @@ all : isis omfdump
 isis : $(OBJ) Makefile
 	gcc -o isis $(DEBUG) $(OBJ)
 
-omfdump : omfdump.o
-	gcc -o omfdump omfdump.c
+omfdump : omfdump.o disasm.o
+	gcc -o omfdump omfdump.o disasm.o
 
 .PHONY: clean
 clean :
