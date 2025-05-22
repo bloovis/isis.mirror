@@ -7,18 +7,39 @@ extern void disasm(const char *prefix, int offset, const unsigned char *buf, int
 
 /* Print a buffer as hex bytes.
  */
-void dump_buf(const unsigned char *buf, int len, const char *prefix)
+void dump_buf(const char *prefix, int offset, const unsigned char *buf, int len)
 {
   int i;
 
   for (i = 0; i < len; i++) {
     if ((i & 0xf) == 0)
-      printf("%s", prefix);
+      printf("%s%04x: ", prefix, i + offset);
     printf("%02x", buf[i]);
-    if ((i & 0xf) == 0x0f || i == len - 1)
+    if ((i & 0xf) == 0x0f || i == len - 1) {
+      /* After dumping 16 bytes, or we reached the end of the buffer,
+       * print those bytes again in ASCII format.
+       */
+      int start, end;
+
+      start = i & 0xfff0;
+      for (end = i; end < start + 0x10; end++)
+	printf("   ");
+      while (start <= i) {
+	unsigned char ch = buf[start];
+	if (ch <= 0x20 || ch >= 0x7f)
+	  ch = '.';
+	putchar(ch);
+        start++;
+      }
       printf("\n");
-    else
-      printf(" ");
+    } else {
+      if ((i & 0x3) == 0x03)
+	putchar('-');
+      else if ((i & 0x0f) == 7)
+	printf("  ");
+      else
+	printf(" ");
+    }
   }
 }
 
@@ -107,13 +128,14 @@ void dump_content(const unsigned char *buf, int len)
   printf("  Offset  0x%x\n", offset);
   printf("  Length  0x%x\n", len -3);
   printf("  Data:\n");
-  dump_buf(&buf[3], len - 3, "    ");
+  dump_buf("    ", offset, &buf[3], len - 3);
 
   /* Cheap heuristic for determining if the buffer contains code
    * that we can disassemble: if any byte has a value greater than 0x7f.
    */
   for (i = 3; i < len; i++) {
     if ((buf[i] & 0xff) > 0x7f) {
+      printf("\n");
       disasm("    ", offset, &buf[3], len - 3);
       break;
     }
@@ -278,7 +300,7 @@ void dump_libdict(const unsigned char *buf, int len)
 void dump_unknown(int rectype, const unsigned char *buf, int len)
 {
   printf("Record type 0x%x, data length 0x%x\n", rectype, len);
-  dump_buf(buf, len, "  ");
+  dump_buf("  ", 0, buf, len);
 }
 
 /* Dump a single file.

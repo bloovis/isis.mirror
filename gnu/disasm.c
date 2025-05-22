@@ -153,13 +153,28 @@ struct optab {
 void disasm(const char *prefix, int offset, const unsigned char *buf, int len)
 {
   int i = 0;
+  int j;
   unsigned char opcode;
   struct optab *op;
 
   while (i < len) {
+    /* Fetch the description of this instruction. */
     opcode = buf[i] & 0xff;
     op = &ops[opcode];
-    printf("%s[%4x] %s", prefix, i + offset, op->name);
+
+    /* Print the instruction address. */
+    printf("%s%04x:", prefix, i + offset);
+
+    /* Print the instruction in hex. */
+    for (j = i; j < i + 3; j++) {
+      if (j >= i + op->len || j >= len)
+	printf("   ");
+      else
+	printf(" %02x", buf[j]);
+    }
+
+    /* Print the disassembly of the instruction. */
+    printf("  %s", op->name);
     if (op->len > 1) {
       unsigned int operand = 0;
       if (op->len == 2)
