@@ -35,8 +35,6 @@ void dump_buf(const char *prefix, int offset, const unsigned char *buf, int len)
     } else {
       if ((i & 0x3) == 0x03)
 	putchar('-');
-      else if ((i & 0x0f) == 7)
-	printf("  ");
       else
 	printf(" ");
     }
