@@ -363,7 +363,8 @@ void dump(FILE *f)
     }
     nread = fread(buf, 1, len, f);
     if (nread != len) {
-      printf("Read %d bytes, expected %d\n", nread, len);
+      printf("For record at offset 0x%x, read %d bytes, expected %d\n",
+	     offset, nread, len);
       return;
     }
     for (i = 0; i < len; i++) {
@@ -378,7 +379,8 @@ void dump(FILE *f)
     }
     chksum += byte;
     if (chksum != 0) {
-      printf("Checksum was 0x%x, expected 0\n", chksum);
+      printf("For record at offset 0x%x, checksum was 0x%x, expected 0\n",
+	     offset, chksum);
       return;
     }
 
@@ -449,8 +451,10 @@ int main(int argc, char *argv[])
       doption = 1;
     else {
       f = fopen(filename, "r");
-      if (f)
+      if (f) {
+	printf("=== %s ===\n", filename);
 	dump(f);
+      }
       else
 	printf("Unable to open %s\n", filename);
     }
