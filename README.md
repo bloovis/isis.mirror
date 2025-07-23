@@ -1,5 +1,8 @@
 # ISIS-II Simulator for Linux, Win32, and MS-DOS
 
+(*Note*: If you are reading this on Github, you can find the
+original Fossil repository [here](https://www.bloovis.com/fossil/home/marka/fossils/isis/home)).
+
 ISIS-II was an operating system developed by Intel in the mid-70s for
 their MDS (Microprocessor Development System).  The MDS was an 8080-based
 system that ran on 8-inch floppies.  It included an assembler, a compiler
