@@ -23,6 +23,12 @@ I originally wrote the simulator in the early 80s for MS-DOS.  See the
 `dos` subdirectory for that older version of the simulator, including a
 makefile that builds the simulator using Turbo C.
 
+To clone this repository:
+
+```
+fossil clone https://chiselapp.com/user/bloovis/repository/isis isis.fossil
+```
+
 To build on Linux, or on Windows using MinGW, simply move to the `gnu` directory
 and run `make`.  The resulting executable is called isis (isis.exe on Windows).
 Then run `make test` to make sure that everything is
