@@ -26,7 +26,7 @@ makefile that builds the simulator using Turbo C.
 To clone this repository:
 
 ```
-fossil clone https://chiselapp.com/user/bloovis/repository/isis isis.fossil
+fossil clone https://www.bloovis.com/fossil/home/marka/fossils/isis
 ```
 
 To build on Linux, or on Windows using MinGW, simply move to the `gnu` directory
